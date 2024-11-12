@@ -387,6 +387,7 @@ class TestCarModelBase(unittest.TestCase):
     controls_allowed_prev = False
     CS_prev = car.CarState.new_message()
     checks = defaultdict(int)
+    mismatches = defaultdict(list)
     selfdrived = SelfdriveD(CP=self.CP)
     selfdrived.initialized = True
     for idx, can in enumerate(self.can_msgs):
@@ -394,7 +395,7 @@ class TestCarModelBase(unittest.TestCase):
       for msg in filter(lambda m: m.src in range(64), can.can):
         to_send = libpanda_py.make_CANPacket(msg.address, msg.src % 4, msg.dat)
         ret = self.safety.safety_rx_hook(to_send)
-        self.assertEqual(1, ret, f"safety rx failed ({ret=}): {(msg.address, msg.src % 4)}")
+        self.assertEqual(1, ret, f"safety rx failed ({ret=}): {to_send} {msg.address} {msg.src} {msg.dat}")
 
       # Skip first frame so CS_prev is properly initialized
       if idx == 0:
@@ -406,6 +407,8 @@ class TestCarModelBase(unittest.TestCase):
 
       # TODO: check rest of panda's carstate (steering, ACC main on, etc.)
 
+      if CS.gasPressed != self.safety.get_gas_pressed_prev():
+        mismatches['gasPressed'].append({ 'CS': CS.gasPressed, 'Panda': self.safety.get_gas_pressed_prev() })
       checks['gasPressed'] += CS.gasPressed != self.safety.get_gas_pressed_prev()
       checks['standstill'] += CS.standstill == self.safety.get_vehicle_moving()
 
@@ -416,6 +419,8 @@ class TestCarModelBase(unittest.TestCase):
           brake_pressed = False
       checks['brakePressed'] += brake_pressed != self.safety.get_brake_pressed_prev()
       checks['regenBraking'] += CS.regenBraking != self.safety.get_regen_braking_prev()
+      if brake_pressed != self.safety.get_brake_pressed_prev():
+        mismatches['brakePressed'].append({ 'CS': brake_pressed, 'Panda': self.safety.get_brake_pressed_prev()})
 
       if self.CP.pcmCruise:
         # On most pcmCruise cars, openpilot's state is always tied to the PCM's cruise state.
@@ -449,7 +454,7 @@ class TestCarModelBase(unittest.TestCase):
       CS_prev = CS
 
     failed_checks = {k: v for k, v in checks.items() if v > 0}
-    self.assertFalse(len(failed_checks), f"panda safety doesn't agree with openpilot: {failed_checks}")
+    self.assertFalse(len(failed_checks), f"panda safety doesn't agree with openpilot: {failed_checks} {mismatches}")
 
 
 @parameterized_class(('platform', 'test_route'), get_test_cases())

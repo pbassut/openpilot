@@ -1,13 +1,12 @@
 [submodule "panda"]
   path = panda
-  url = ../../commaai/panda.git
+  url = https://github.com/pbassut/panda.git
 [submodule "opendbc"]
   path = opendbc_repo
-  url = ../../pbassut/opendbc.git
-  # url = https://github.com/pbassut/opendbc.git
+  url = https://github.com/pbassut/opendbc.git
 [submodule "msgq"]
   path = msgq_repo
-  url = ../../commaai/msgq.git
+  url = https://github.com/pbassut/msgq.git
 [submodule "rednose_repo"]
   path = rednose_repo
   url = ../../commaai/rednose.git
