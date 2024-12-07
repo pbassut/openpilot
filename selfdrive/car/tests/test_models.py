@@ -454,7 +454,7 @@ class TestCarModelBase(unittest.TestCase):
       CS_prev = CS
 
     failed_checks = {k: v for k, v in checks.items() if v > 0}
-    self.assertFalse(len(failed_checks), f"panda safety doesn't agree with openpilot: {failed_checks} {mismatches}")
+    self.assertFalse(len(failed_checks), f"panda safety doesn't agree with openpilot: {failed_checks}")
 
 
 @parameterized_class(('platform', 'test_route'), get_test_cases())
