@@ -8,8 +8,9 @@ from openpilot.common.numpy_fast import interp
 DAS_BUS = 1
 
 class CarController(CarControllerBase):
-  def __init__(self, dbc_names, CP):
-    super().__init__(dbc_names, CP)
+  def __init__(self, dbc_name, CP, VM):
+    super().__init__(dbc_name, CP, VM)
+
     self.apply_steer_last = 0
     self.apply_brake = 0
     self.apply_gas = 0
