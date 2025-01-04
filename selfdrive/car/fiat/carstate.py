@@ -15,7 +15,7 @@ class CarState(CarStateBase):
 
     self.distance_button = 0
 
-  def update(self, cp, cp_adas):
+  def update(self, cp, _, cp_adas):
     ret = car.CarState.new_message()
 
     self.distance_button = cp_adas.vl["DAS_1"]["CRUISE_BUTTON_PRESSED"]
