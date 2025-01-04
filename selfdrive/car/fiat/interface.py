@@ -3,6 +3,8 @@ from cereal import car
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 from openpilot.selfdrive.car import create_button_events, get_safety_config
 
+ButtonType = car.CarState.ButtonEvent.Type
+
 class CarInterface(CarInterfaceBase):
   def __init__(self, CP, CarController, CarState):
     super().__init__(CP, CarController, CarState)
