@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
 
-from opendbc.car import Bus, CarSpecs, DbcDict, PlatformConfig, Platforms
-from opendbc.car.structs import CarParams
-from opendbc.car.docs_definitions import CarHarness, CarDocs, CarParts
-from opendbc.car.fw_query_definitions import FwQueryConfig
+from cereal import car
+from openpilot.selfdrive.car.docs_definitions import CarHarness, CarDocs, CarParts
+from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig
+from openpilot.selfdrive.car import CarSpecs, dbc_dict, DbcDict, PlatformConfig, Platforms
 
-Ecu = CarParams.Ecu
+Ecu = car.CarParams.Ecu
 
 @dataclass
 class FastbackCarDocs(CarDocs):
@@ -15,11 +15,7 @@ class FastbackCarDocs(CarDocs):
 
 @dataclass
 class FastbackPlatformConfig(PlatformConfig):
-  dbc_dict: DbcDict = field(default_factory=lambda: {
-    Bus.pt: "fca_fastback_limited_edition_2024_generated",
-    Bus.adas: "fca_fastback_limited_edition_2024_generated",
-    Bus.cam: "fca_fastback_limited_edition_2024_generated",
-  })
+  dbc_dict: DbcDict = field(default_factory=lambda: dbc_dict('fca_fastback_limited_edition_2024_generated', 'fca_fastback_limited_edition_2024_generated'))
 
 
 @dataclass(frozen=True)
