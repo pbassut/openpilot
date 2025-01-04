@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+from cereal import car
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 from openpilot.selfdrive.car import create_button_events, get_safety_config
 
 class CarInterface(CarInterfaceBase):
+  def __init__(self, CP, CarController, CarState):
+    super().__init__(CP, CarController, CarState)
+
   @staticmethod
   def _get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs):
     ret.carName = "fiat"
@@ -12,7 +16,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerLimitTimer = 0.4
 
     # safety config
-    ret.safetyConfigs = [get_safety_config(structs.CarParams.SafetyModel.fcaFastback)]
+    ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.fiat)]
 
     CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
