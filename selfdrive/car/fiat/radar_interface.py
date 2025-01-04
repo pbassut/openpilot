@@ -1,4 +1,4 @@
-from opendbc.car.interfaces import RadarInterfaceBase
+from openpilot.selfdrive.car.interfaces import RadarInterfaceBase
 
 class RadarInterface(RadarInterfaceBase):
   pass
