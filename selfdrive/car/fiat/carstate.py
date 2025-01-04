@@ -85,15 +85,6 @@ class CarState(CarStateBase):
     return ret
 
   @staticmethod
-  def get_cruise_messages():
-    messages = [
-      ("GEAR", 1),
-      ("ENGINE_2", 99),
-      ("ABS_6", 100),
-    ]
-    return CANParser(DBC[CP.carFingerprint]["adas"], messages, 1)
-
-  @staticmethod
   def get_can_parser(CP):
     messages = [
       # sig_address, frequency
@@ -110,4 +101,13 @@ class CarState(CarStateBase):
     ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
+
+  @staticmethod
+  def get_adas_can_parser(CP):
+    messages = [
+      ("GEAR", 1),
+      ("ENGINE_2", 99),
+      ("ABS_6", 100),
+    ]
+    return CANParser(DBC[CP.carFingerprint]["pt"], messages, 1)
 

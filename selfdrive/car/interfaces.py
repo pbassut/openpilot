@@ -233,6 +233,7 @@ class CarInterfaceBase(ABC):
     self.can_parsers = [self.cp, self.cp_cam, self.cp_adas, self.cp_body, self.cp_loopback]
 
     dbc_name = "" if self.cp is None else self.cp.dbc_name
+    print(dbc_name, CP, self.VM)
     self.CC: CarControllerBase = CarController(dbc_name, CP, self.VM)
 
     self.param_s = Params()
