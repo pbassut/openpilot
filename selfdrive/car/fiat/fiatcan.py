@@ -1,8 +1,3 @@
-from opendbc.car import structs
-
-GearShifter = structs.CarState.GearShifter
-VisualAlert = structs.CarControl.HUDControl.VisualAlert
-
 def create_lkas_command(packer, frame, apply_steer, control_enabled):
   values = {
     "STEERING_TORQUE": apply_steer,

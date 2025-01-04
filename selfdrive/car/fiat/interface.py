@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-from opendbc.car import get_safety_config, structs
-from opendbc.car.interfaces import CarInterfaceBase
+from openpilot.selfdrive.car.interfaces import CarInterfaceBase
+from openpilot.selfdrive.car import create_button_events, get_safety_config
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
-  def _get_params(ret: structs.CarParams, candidate, fingerprint, car_fw, experimental_long, docs) -> structs.CarParams:
+  def _get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs):
     ret.carName = "fiat"
 
     ret.radarUnavailable = True
@@ -12,7 +12,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerLimitTimer = 0.4
 
     # safety config
-    ret.safetyConfigs = [get_safety_config(structs.CarParams.SafetyModel.fiat)]
+    ret.safetyConfigs = [get_safety_config(structs.CarParams.SafetyModel.fcaFastback)]
 
     CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 

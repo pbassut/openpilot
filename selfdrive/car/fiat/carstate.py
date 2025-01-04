@@ -1,10 +1,7 @@
 from opendbc.can.parser import CANParser
-from opendbc.car import Bus, structs
-from opendbc.car.fiat.values import DBC, STEER_THRESHOLD
-from opendbc.car.common.conversions import Conversions as CV
-from opendbc.car.interfaces import CarStateBase
-
-ButtonType = structs.CarState.ButtonEvent.Type
+from openpilot.selfdrive.car.fiat.values import DBC, STEER_THRESHOLD
+from openpilot.selfdrive.car.interfaces import CarStateBase
+from openpilot.common.conversions import Conversions as CV
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -17,14 +14,10 @@ class CarState(CarStateBase):
 
     self.distance_button = 0
 
-  def update(self, can_parsers, *_) -> structs.CarState:
-    cp = can_parsers[Bus.pt]
-    cp_adas = can_parsers[Bus.adas]
-
+  def update(self, cp, cp_adas):
     ret = structs.CarState()
 
     self.distance_button = cp_adas.vl["DAS_1"]["CRUISE_BUTTON_PRESSED"]
-
 
     # lock info
     ret.doorOpen = any([cp.vl["BCM_1"]["DOOR_OPEN_FL"],
@@ -93,15 +86,16 @@ class CarState(CarStateBase):
 
   @staticmethod
   def get_cruise_messages():
-    cruise_messages = [
-      ("DAS_1", 50),
-      ("DAS_2", 1),
+    messages = [
+      ("GEAR", 1),
+      ("ENGINE_2", 99),
+      ("ABS_6", 100),
     ]
-    return cruise_messages
+    return CANParser(DBC[CP.carFingerprint]["adas"], messages, 1)
 
   @staticmethod
-  def get_can_parsers(CP):
-    pt_messages = [
+  def get_can_parser(CP):
+    messages = [
       # sig_address, frequency
       ("BCM_2", 4),
       ("STEERING", 100),
@@ -115,19 +109,5 @@ class CarState(CarStateBase):
       ("ABS_6", 100),
     ]
 
-    adas_messages = [
-      ("GEAR", 1),
-      ("ENGINE_2", 99),
-      ("ABS_6", 100),
-    ]
+    return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
 
-    adas_messages += CarState.get_cruise_messages()
-
-    cam_messages = [
-    ]
-
-    return {
-      Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], pt_messages, 0),
-      Bus.adas: CANParser(DBC[CP.carFingerprint][Bus.adas], adas_messages, 1),
-      Bus.cam: CANParser(DBC[CP.carFingerprint][Bus.cam], cam_messages, 2),
-    }

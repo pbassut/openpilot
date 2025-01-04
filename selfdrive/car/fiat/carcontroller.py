@@ -1,11 +1,9 @@
 from opendbc.can.packer import CANPacker
-from opendbc.car import Bus, apply_meas_steer_torque_limits, structs
-from opendbc.car.fiat import fiatcan
-from opendbc.car.fiat.values import CarControllerParams
-from opendbc.car.interfaces import CarControllerBase
-from opendbc.car.common.numpy_fast import interp
-
-LongCtrlState = structs.CarControl.Actuators.LongControlState
+from openpilot.selfdrive.car import apply_meas_steer_torque_limits
+from openpilot.selfdrive.car.fiat import fiatcan
+from openpilot.selfdrive.car.fiat.values import CarControllerParams
+from openpilot.selfdrive.car.interfaces import CarControllerBase
+from openpilot.common.numpy_fast import interp
 
 DAS_BUS = 1
 
@@ -19,7 +17,7 @@ class CarController(CarControllerBase):
     self.hud_count = 0
     self.last_lkas_falling_edge = 0
 
-    self.packer = CANPacker(dbc_names[Bus.pt])
+    self.packer = CANPacker(DBC[self.CP.carFingerprint]['pt'])
     self.params = CarControllerParams(CP)
 
   def update(self, CC, CS, now_nanos):
@@ -29,7 +27,7 @@ class CarController(CarControllerBase):
     # longitudinal control
     if self.CP.openpilotLongitudinalControl:
       # Gas, brakes, and UI commands - all at 100Hz
-      stopping = actuators.longControlState == LongCtrlState.stopping
+      stopping = False # actuators.longControlState == LongCtrlState.stopping
       self.apply_gas = int(round(interp(actuators.accel)))
       self.apply_brake = int(round(interp(actuators.accel)))
 

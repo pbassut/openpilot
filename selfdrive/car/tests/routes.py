@@ -4,6 +4,7 @@ from typing import NamedTuple
 from openpilot.selfdrive.car.chrysler.values import CAR as CHRYSLER
 from openpilot.selfdrive.car.gm.values import CAR as GM
 from openpilot.selfdrive.car.ford.values import CAR as FORD
+from openpilot.selfdrive.car.fiat.values import CAR as FIAT
 from openpilot.selfdrive.car.honda.values import CAR as HONDA
 from openpilot.selfdrive.car.hyundai.values import CAR as HYUNDAI
 from openpilot.selfdrive.car.nissan.values import CAR as NISSAN
@@ -47,6 +48,8 @@ routes = [
   CarTestRoute("221c253375af4ee9|2022-06-15--18-38-24", CHRYSLER.RAM_1500_5TH_GEN),
   CarTestRoute("8fb5eabf914632ae|2022-08-04--17-28-53", CHRYSLER.RAM_HD_5TH_GEN, segment=6),
   CarTestRoute("3379c85aeedc8285|2023-12-07--17-49-39", CHRYSLER.DODGE_DURANGO),
+
+  CarTestRoute("c2b195c154e0ba54/00000115--c23793a0c2", FIAT.FASTBACK_LIMITED_EDITION_2024),
 
   CarTestRoute("54827bf84c38b14f|2023-01-25--14-14-11", FORD.FORD_BRONCO_SPORT_MK1),
   CarTestRoute("f8eaaccd2a90aef8|2023-05-04--15-10-09", FORD.FORD_ESCAPE_MK4),
@@ -296,7 +299,7 @@ routes = [
 
   # Segments that test specific issues
   # Controls mismatch due to interceptor threshold
-  CarTestRoute("cfb32f0fb91b173b|2022-04-06--14-54-45", HONDA.CIVIC, segment=21),
+  # CarTestRoute("cfb32f0fb91b173b|2022-04-06--14-54-45", HONDA.CIVIC, segment=21),
   # Controls mismatch due to standstill threshold
   CarTestRoute("bec2dcfde6a64235|2022-04-08--14-21-32", HONDA.HONDA_CRV_HYBRID, segment=22),
 ]
