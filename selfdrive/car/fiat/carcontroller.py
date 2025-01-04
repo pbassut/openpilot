@@ -18,7 +18,7 @@ class CarController(CarControllerBase):
     self.hud_count = 0
     self.last_lkas_falling_edge = 0
 
-    self.packer = CANPacker(DBC[self.CP.carFingerprint]['pt'])
+    self.packer = CANPacker(dbc_name)
     self.params = CarControllerParams(CP)
 
   def update(self, CC, CS, now_nanos):
