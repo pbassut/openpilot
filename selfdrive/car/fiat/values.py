@@ -15,7 +15,7 @@ class FastbackCarDocs(CarDocs):
 
 @dataclass
 class FastbackPlatformConfig(PlatformConfig):
-  dbc_dict: DbcDict = field(default_factory=lambda: dbc_dict('fca_fastback_limited_edition_2024_generated'))
+  dbc_dict: DbcDict = field(default_factory=lambda: dbc_dict('fca_fastback_limited_edition_2024_generated', 'fca_fastback_limited_edition_2024_generated'))
 
 
 @dataclass(frozen=True)
