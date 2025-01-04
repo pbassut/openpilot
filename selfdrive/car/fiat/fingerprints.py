@@ -1,7 +1,7 @@
-from opendbc.car.structs import CarParams
-from opendbc.car.fiat.values import CAR
+from cereal import car
+from openpilot.selfdrive.car.fiat.values import CAR
 
-Ecu = CarParams.Ecu
+Ecu = car.CarParams.Ecu
 
 FW_VERSIONS = {
   CAR.FASTBACK_LIMITED_EDITION_2024: {

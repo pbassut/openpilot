@@ -1,3 +1,4 @@
+from cereal import car
 from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.fiat.values import DBC, STEER_THRESHOLD
 from openpilot.selfdrive.car.interfaces import CarStateBase
@@ -15,7 +16,7 @@ class CarState(CarStateBase):
     self.distance_button = 0
 
   def update(self, cp, cp_adas):
-    ret = structs.CarState()
+    ret = car.CarState.new_message()
 
     self.distance_button = cp_adas.vl["DAS_1"]["CRUISE_BUTTON_PRESSED"]
 
