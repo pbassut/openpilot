@@ -91,23 +91,14 @@ class CarInterface(CarInterfaceBase):
     ]
 
     # events
-    events = self.create_common_events(ret, c, extra_gears=[car.CarState.GearShifter.low], pcm_enable=False)
+    events = self.create_common_events(ret, c, extra_gears=[], pcm_enable=False)
 
     events, ret = self.create_sp_events(ret, events)
 
-    # # Low speed steer alert hysteresis logic
-    # if self.CP.carFingerprint in RAM_DT:
-    #   if self.CS.out.vEgo >= self.CP.minEnableSpeed:
-    #     self.low_speed_alert = False
-    #   if (self.CP.minEnableSpeed >= 14.5) and (self.CS.out.gearShifter != car.CarState.GearShifter.drive):
-    #     self.low_speed_alert = True
-    # else:
-    #   if self.CP.minSteerSpeed > 0. and ret.vEgo < (self.CP.minSteerSpeed + 0.5):
-    #     self.low_speed_alert = True
-    #   elif ret.vEgo > (self.CP.minSteerSpeed + 1.):
-    #     self.low_speed_alert = False
-    # if self.low_speed_alert:
-    #   events.add(car.CarEvent.EventName.belowSteerSpeed)
+    # Low speed steer alert hysteresis logic
+    self.low_speed_alert = self.CS.out.vEgo <= self.CP.minEnableSpeed
+    if self.low_speed_alert:
+      events.add(car.CarEvent.EventName.belowSteerSpeed)
 
     ret.customStockLong = self.update_custom_stock_long()
 
