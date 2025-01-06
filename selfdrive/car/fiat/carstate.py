@@ -79,7 +79,6 @@ class CarState(CarStateBase):
     # cruise state
     ret.cruiseState.available = cp_adas.vl["DAS_2"]["ACC_STATE"] == 1
     ret.cruiseState.enabled = cp_adas.vl["DAS_2"]["ACC_ENGAGED"] == 1
-    # this is wrong
     ret.cruiseState.speed = cp_adas.vl["DAS_2"]["ACC_SET_SPEED"]
 
     self.button_counter = cp_adas.vl["DAS_1"]["COUNTER"]
@@ -90,12 +89,12 @@ class CarState(CarStateBase):
   def get_can_parser(CP):
     messages = [
       # sig_address, frequency
+      ("BCM_1", 1),
       ("BCM_2", 4),
       ("STEERING", 100),
       ("ABS_1", 100),
       ("ABS_2", 100),
       ("ABS_3", 100),
-      ("BCM_1", 1),
       ('ENGINE_1', 99),
       ('SEATBELTS', 10),
       ('EPS_2', 100),
