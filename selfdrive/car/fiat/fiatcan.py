@@ -1,7 +1,6 @@
-def create_lkas_command(packer, frame, apply_steer, control_enabled):
+def create_lkas_command(packer, frame, apply_steer):
   values = {
     "STEERING_TORQUE": apply_steer,
-    "LKAS_WATCH_STATUS": control_enabled,
     "COUNTER": frame,
   }
   return packer.make_can_msg("LKAS_COMMAND", 0, values)

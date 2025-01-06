@@ -25,15 +25,6 @@ class CarController(CarControllerBase):
     actuators = CC.actuators
     can_sends = []
 
-    # longitudinal control
-    if self.CP.openpilotLongitudinalControl:
-      # Gas, brakes, and UI commands - all at 100Hz
-      self.apply_gas = int(round(interp(actuators.accel)))
-      self.apply_brake = int(round(interp(actuators.accel)))
-
-      can_sends.append(fiatcan.create_gas_command(self.packer, DAS_BUS, self.apply_gas, CS.accel_counter + 1))
-      can_sends.append(fiatcan.create_friction_brake_command(self.packer, DAS_BUS, self.apply_brake, CS.accel_counter + 1))
-
     # cruise buttons
     # ACC cancellation
     if CC.cruiseControl.cancel:
@@ -43,14 +34,25 @@ class CarController(CarControllerBase):
     elif CC.cruiseControl.resume:
       can_sends.append(fiatcan.create_cruise_buttons(self.packer, CS.button_counter + 1, DAS_BUS, activate=True))
 
+    # longitudinal control
+    if self.CP.openpilotLongitudinalControl and CC.longActive:
+      # Gas, brakes, and UI commands - all at 100Hz
+      self.apply_gas = int(round(interp(actuators.accel)))
+      self.apply_brake = int(round(interp(actuators.accel)))
+
+      can_sends.append(fiatcan.create_gas_command(self.packer, DAS_BUS, self.apply_gas, CS.accel_counter + 1))
+      can_sends.append(fiatcan.create_friction_brake_command(self.packer, DAS_BUS, self.apply_brake, CS.accel_counter + 1))
+
     # steering
-    if self.frame % self.params.STEER_STEP == 0:
-      # steer torque
+    # steer torque
+    apply_steer = 0
+    if CC.latActive:
       new_steer = int(round(actuators.steer * self.params.STEER_MAX))
       apply_steer = apply_meas_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorqueEps, self.params)
-      self.apply_steer_last = apply_steer
 
-      can_sends.append(fiatcan.create_lkas_command(self.packer, self.frame, apply_steer, CC.enabled))
+    self.apply_steer_last = apply_steer
+
+    can_sends.append(fiatcan.create_lkas_command(self.packer, self.frame, apply_steer))
 
     self.frame += 1
 
