@@ -38,7 +38,7 @@ class CarInterface(CarInterfaceBase):
     return ret
 
   def _update(self, c):
-    ret = self.CS.update(self.cp, self.cp_adas)
+    ret = self.CS.update(self.cp, self.cp_adas, self.cp_cam)
 
     # self.CS.button_event = [
     #   *self.CS.button_events,
