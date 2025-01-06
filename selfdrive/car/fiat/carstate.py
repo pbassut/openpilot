@@ -11,14 +11,13 @@ class CarState(CarStateBase):
 
     self.auto_high_beam = 0
     self.button_counter = 0
-    self.lkas_watch_status = -1
+    self.accel_counter = 0
 
-    self.distance_button = 0
+    self.lkas_enabled = False
+    self.prev_lkas_enabled = False
 
   def update(self, cp, cp_adas):
     ret = car.CarState.new_message()
-
-    self.distance_button = cp_adas.vl["DAS_1"]["CRUISE_BUTTON_PRESSED"]
 
     # lock info
     ret.doorOpen = any([cp.vl["BCM_1"]["DOOR_OPEN_FL"],
@@ -35,6 +34,8 @@ class CarState(CarStateBase):
     # gas pedal
     ret.gas = cp.vl["ENGINE_1"]["ACCEL_PEDAL_THRESHOLD"]
     ret.gasPressed = ret.gas > 0
+
+    self.accel_counter = cp.vl["ENGINE_1"]["COUNTER"]
 
     # car speed
     ret.vEgoRaw = cp_adas.vl["ABS_6"]["VEHICLE_SPEED"] * CV.KPH_TO_MS

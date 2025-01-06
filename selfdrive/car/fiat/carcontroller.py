@@ -28,15 +28,11 @@ class CarController(CarControllerBase):
     # longitudinal control
     if self.CP.openpilotLongitudinalControl:
       # Gas, brakes, and UI commands - all at 100Hz
-      stopping = False # actuators.longControlState == LongCtrlState.stopping
       self.apply_gas = int(round(interp(actuators.accel)))
       self.apply_brake = int(round(interp(actuators.accel)))
 
-      near_stop = CC.longActive and (abs(CS.out.vEgo) < self.params.NEAR_STOP_BRAKE_PHASE)
-
-      can_sends.append(fiatcan.create_gas_command(self.packer, DAS_BUS, self.apply_gas, self.frame, CC.enabled, stopping))
-      can_sends.append(fiatcan.create_friction_brake_command(self.packer, DAS_BUS, self.apply_brake,
-                                                            self.frame, CC.enabled, near_stop, stopping, self.CP))
+      can_sends.append(fiatcan.create_gas_command(self.packer, DAS_BUS, self.apply_gas, CS.accel_counter + 1))
+      can_sends.append(fiatcan.create_friction_brake_command(self.packer, DAS_BUS, self.apply_brake, CS.accel_counter + 1))
 
     # cruise buttons
     # ACC cancellation
