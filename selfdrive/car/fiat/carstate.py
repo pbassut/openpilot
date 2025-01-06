@@ -72,7 +72,7 @@ class CarState(CarStateBase):
     ret.steeringTorque = cp.vl["EPS_2"]["DRIVER_TORQUE"]
     ret.steeringTorqueEps = cp.vl["EPS_2"]["EPS_TORQUE"]
     ret.steeringPressed = abs(ret.steeringTorque) > STEER_THRESHOLD
-    # ret.steerFaultTemporary = cp.vl["EPS_3"]["DASM_FAULT"] == 1
+    ret.steerFaultTemporary = cp.vl["LKA_HUD_2"]["LKAS_FAULT"] == 7
     ret.yawRate = cp.vl["ABS_2"]["YAW_RATE"]
 
     # cruise state
@@ -99,6 +99,7 @@ class CarState(CarStateBase):
       ('SEATBELTS', 10),
       ('EPS_2', 100),
       ("ABS_6", 100),
+      ("LKA_HUD_2", 4),
     ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
