@@ -73,7 +73,7 @@ class CarState(CarStateBase):
     ret.steeringTorque = cp.vl["EPS_2"]["DRIVER_TORQUE"]
     ret.steeringTorqueEps = cp.vl["EPS_2"]["EPS_TORQUE"]
     ret.steeringPressed = abs(ret.steeringTorque) > STEER_THRESHOLD
-    ret.steerFaultTemporary = cp_cam.vl["LKA_HUD_2"]["LKAS_FAULT"] == 7
+    ret.steerFaultTemporary = cp_cam.vl["LKA_HUD_2"]["LKAS_FAULT_TYPE"] == 7
     ret.yawRate = cp.vl["ABS_2"]["YAW_RATE"]
 
     # cruise state
