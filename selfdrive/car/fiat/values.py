@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from cereal import car
+from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.docs_definitions import CarHarness, CarDocs, CarParts
 from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig
 from openpilot.selfdrive.car import CarSpecs, dbc_dict, DbcDict, PlatformConfig, Platforms
@@ -20,7 +21,7 @@ class FastbackPlatformConfig(PlatformConfig):
 
 @dataclass(frozen=True)
 class FastbackCarSpecs(CarSpecs):
-  minSteerSpeed: float = 0  # m/s
+  minSteerSpeed = 5 * CV.KPH_TO_MS
   tireStiffnessFactor: float = .97  # not optimized yet
 
 class CAR(Platforms):
