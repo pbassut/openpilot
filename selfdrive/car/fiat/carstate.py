@@ -65,7 +65,7 @@ class CarState(CarStateBase):
       cp.vl["BCM_2"]["LEFT_TURN_STALK"] == 1,
       cp.vl["BCM_2"]["RIGHT_TURN_STALK"] == 1
     )
-    #ret.genericToggle = cp.vl["BCM_2"]["HIGH_BEAM"] == 1
+    ret.genericToggle = cp.vl["BCM_2"]["HIGH_BEAM"] == 1
 
     # steering wheel
     ret.steeringAngleDeg = cp.vl["STEERING"]["STEERING_ANGLE"]
