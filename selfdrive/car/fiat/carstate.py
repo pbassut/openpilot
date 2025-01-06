@@ -16,7 +16,7 @@ class CarState(CarStateBase):
     self.lkas_enabled = False
     self.prev_lkas_enabled = False
 
-  def update(self, cp, cp_adas):
+  def update(self, cp, cp_adas, cp_cam):
     ret = car.CarState.new_message()
 
     # lock info
@@ -73,7 +73,7 @@ class CarState(CarStateBase):
     ret.steeringTorque = cp.vl["EPS_2"]["DRIVER_TORQUE"]
     ret.steeringTorqueEps = cp.vl["EPS_2"]["EPS_TORQUE"]
     ret.steeringPressed = abs(ret.steeringTorque) > STEER_THRESHOLD
-    ret.steerFaultTemporary = cp.vl["LKA_HUD_2"]["LKAS_FAULT"] == 7
+    ret.steerFaultTemporary = cp_cam.vl["LKA_HUD_2"]["LKAS_FAULT"] == 7
     ret.yawRate = cp.vl["ABS_2"]["YAW_RATE"]
 
     # cruise state
@@ -99,7 +99,6 @@ class CarState(CarStateBase):
       ('SEATBELTS', 10),
       ('EPS_2', 100),
       ("ABS_6", 100),
-      ("LKA_HUD_2", 4),
     ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
@@ -116,4 +115,11 @@ class CarState(CarStateBase):
       ("DAS_2", 1),
     ]
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 1)
+
+  @staticmethod
+  def get_cam_can_parser(CP):
+    messages = [
+      ("LKA_HUD_2", 4),
+    ]
+    return CANParser(DBC[CP.carFingerprint]["pt"], messages, 2)
 
