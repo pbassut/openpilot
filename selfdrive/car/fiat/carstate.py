@@ -65,7 +65,7 @@ class CarState(CarStateBase):
       cp.vl["BCM_2"]["LEFT_TURN_STALK"] == 1,
       cp.vl["BCM_2"]["RIGHT_TURN_STALK"] == 1
     )
-    # ret.genericToggle = cp.vl["STEERING_LEVERS"]["HIGH_BEAM_PRESSED"] == 1
+    ret.genericToggle = cp.vl["BCM_2"]["HIGH_BEAM_PRESSED"] == 1
 
     # steering wheel
     ret.steeringAngleDeg = cp.vl["STEERING"]["STEERING_ANGLE"]
@@ -80,7 +80,7 @@ class CarState(CarStateBase):
     ret.cruiseState.available = cp_adas.vl["DAS_2"]["ACC_STATE"] == 1
     ret.cruiseState.enabled = cp_adas.vl["DAS_2"]["ACC_ENGAGED"] == 1
     # this is wrong
-    ret.cruiseState.speed = cp_adas.vl["DAS_2"]["ACC_SET_SPEED"] * CV.KPH_TO_MS
+    ret.cruiseState.speed = cp_adas.vl["DAS_2"]["ACC_SET_SPEED"]
 
     self.button_counter = cp_adas.vl["DAS_1"]["COUNTER"]
 
