@@ -96,9 +96,9 @@ class CarInterface(CarInterfaceBase):
     events, ret = self.create_sp_events(ret, events)
 
     # Low speed steer alert hysteresis logic
-    # self.low_speed_alert = self.CS.out.vEgo <= self.CP.minEnableSpeed
-    # if self.low_speed_alert:
-    #   events.add(car.CarEvent.EventName.belowSteerSpeed)
+    self.low_speed_alert = self.CS.out.vEgo <= self.CP.minEnableSpeed
+    if self.low_speed_alert:
+      events.add(car.CarEvent.EventName.belowSteerSpeed)
 
     ret.customStockLong = self.update_custom_stock_long()
 
