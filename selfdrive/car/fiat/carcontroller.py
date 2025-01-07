@@ -54,7 +54,7 @@ class CarController(CarControllerBase):
 
     can_sends.append(fiatcan.create_lkas_command(self.packer, self.frame, apply_steer, CC.latActive))
     if self.frame % 25 == 0:
-      can_sends.append(fiatcan.create_lkas_hud_command(self.packer))
+      can_sends.append(fiatcan.create_lkas_hud_command(self.packer, CC.latActive))
 
     self.frame += 1
 
