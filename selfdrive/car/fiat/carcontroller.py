@@ -53,6 +53,7 @@ class CarController(CarControllerBase):
     self.apply_steer_last = apply_steer
 
     can_sends.append(fiatcan.create_lkas_command(self.packer, self.frame, apply_steer, CC.latActive))
+    can_sends.append(fiatcan.create_lkas_hud_command(self.packer))
 
     self.frame += 1
 
