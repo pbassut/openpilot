@@ -21,7 +21,7 @@ class FastbackPlatformConfig(PlatformConfig):
 
 @dataclass(frozen=True)
 class FastbackCarSpecs(CarSpecs):
-  minSteerSpeed = 10 * CV.KPH_TO_MS
+  minSteerSpeed = 0 * CV.KPH_TO_MS
   tireStiffnessFactor: float = .97  # not optimized yet
 
 class CAR(Platforms):
