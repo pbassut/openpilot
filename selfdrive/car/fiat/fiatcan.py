@@ -8,11 +8,11 @@ def create_lkas_command(packer, frame, apply_steer, enabled):
 
 def create_lkas_hud_command(packer):
   values = {
-    "LKAS_FAULT_TYPE": 0,
-    "LANE_HUD_INDICATOR": 8,
-    "HANDS_ON_WHEEL_WARNING": 1,
     "SOMETHING_HANDS_ON_WHEEL_2": 0,
     "SOMETHING_HANDS_ON_WHEEL": 0,
+    "HANDS_ON_WHEEL_WARNING": 1,
+    "LANE_HUD_INDICATOR": 6,
+    "LKAS_FAULT_TYPE": 0,
   }
   return packer.make_can_msg("LKA_HUD_2", 0, values)
 
