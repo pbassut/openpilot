@@ -12,6 +12,9 @@ class CarState(CarStateBase):
     self.button_counter = 0
     self.accel_counter = 0
 
+    self.prev_distance_button = 0
+    self.distance_button = 0
+
     self.lkas_enabled = False
     self.prev_lkas_enabled = False
 
@@ -19,6 +22,7 @@ class CarState(CarStateBase):
     ret = car.CarState.new_message()
 
     self.prev_lkas_enabled = self.lkas_enabled
+    self.prev_distance_button = self.distance_button
 
     # lock info
     ret.doorOpen = any([cp.vl["BCM_1"]["DOOR_OPEN_FL"],
@@ -72,7 +76,8 @@ class CarState(CarStateBase):
     ret.steeringTorque = cp.vl["EPS_2"]["DRIVER_TORQUE"]
     ret.steeringTorqueEps = cp.vl["EPS_2"]["EPS_TORQUE"]
     ret.steeringPressed = abs(ret.steeringTorque) > STEER_THRESHOLD
-    ret.steerFaultTemporary = cp_cam.vl["LKA_HUD_2"]["LKAS_FAULT_TYPE"] == 7
+    # ret.steerFaultTemporary = cp_cam.vl["LKA_HUD_2"]["LKAS_FAULT_TYPE"] == 7
+    ret.steerFaultPermanent = cp_cam.vl["LKA_HUD_2"]["LKAS_FAULT_TYPE"] == 7
     ret.yawRate = cp.vl["ABS_2"]["YAW_RATE"]
 
     # cruise state
@@ -80,7 +85,8 @@ class CarState(CarStateBase):
     ret.cruiseState.enabled = cp_adas.vl["DAS_2"]["ACC_ENGAGED"] == 1
     ret.cruiseState.speed = cp_adas.vl["DAS_2"]["ACC_SET_SPEED"]
 
-    # self.lkas_enabled = cp.vl["LKA_HUD_2"]["LKAS_STATUS"] == 0
+    self.lkas_enabled = cp.vl["BUTTONS_1"]["LKAS_BUTTON"] == 1
+    self.distance_button = cp_adas.vl["DAS_1"]["CRUISE_BUTTON_PRESSED"] == 32
 
     self.button_counter = cp_adas.vl["DAS_1"]["COUNTER"]
     self.accel_counter = cp.vl["ENGINE_1"]["COUNTER"]
@@ -101,7 +107,8 @@ class CarState(CarStateBase):
       ('SEATBELTS', 10),
       ('EPS_2', 100),
       ("ABS_6", 100),
-      # ("LKA_HUD_2", 4)
+      ("LKA_HUD_2", 4),
+      ("BUTTONS_1", 4),
     ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)

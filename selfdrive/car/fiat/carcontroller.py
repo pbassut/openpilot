@@ -49,8 +49,8 @@ class CarController(CarControllerBase):
       apply_steer = apply_meas_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorqueEps, self.params) * 0.98
 
     self.apply_steer_last = apply_steer
-
     can_sends.append(fiatcan.create_lkas_command(self.packer, self.frame, apply_steer, CC.latActive))
+
     if self.frame % 25 == 0:
       can_sends.append(fiatcan.create_lkas_hud_command(self.packer, CC.latActive))
 
