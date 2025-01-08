@@ -1,6 +1,7 @@
 from openpilot.selfdrive.car.interfaces import get_interface_attr
 from openpilot.selfdrive.car.body.values import CAR as BODY
 from openpilot.selfdrive.car.chrysler.values import CAR as CHRYSLER
+from openpilot.selfdrive.car.fiat.values import CAR as FIAT
 from openpilot.selfdrive.car.ford.values import CAR as FORD
 from openpilot.selfdrive.car.gm.values import CAR as GM
 from openpilot.selfdrive.car.honda.values import CAR as HONDA
@@ -142,6 +143,7 @@ MIGRATION = {
   "RAM 1500 5TH GEN": CHRYSLER.RAM_1500_5TH_GEN,
   "RAM HD 5TH GEN": CHRYSLER.RAM_HD_5TH_GEN,
   "FORD BRONCO SPORT 1ST GEN": FORD.FORD_BRONCO_SPORT_MK1,
+  "FASTBACK LIMITED EDITION 2024": FIAT.FASTBACK_LIMITED_EDITION_2024,
   "FORD ESCAPE 4TH GEN": FORD.FORD_ESCAPE_MK4,
   "FORD EXPLORER 6TH GEN": FORD.FORD_EXPLORER_MK6,
   "FORD F-150 14TH GEN": FORD.FORD_F_150_MK14,
