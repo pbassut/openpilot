@@ -80,7 +80,7 @@ class CarState(CarStateBase):
     ret.cruiseState.enabled = cp_adas.vl["DAS_2"]["ACC_ENGAGED"] == 1
     ret.cruiseState.speed = cp_adas.vl["DAS_2"]["ACC_SET_SPEED"]
 
-    self.lkas_enabled = cp.vl["LKA_HUD_2"]["LKAS_STATUS"] == 0
+    # self.lkas_enabled = cp.vl["LKA_HUD_2"]["LKAS_STATUS"] == 0
 
     self.button_counter = cp_adas.vl["DAS_1"]["COUNTER"]
     self.accel_counter = cp.vl["ENGINE_1"]["COUNTER"]
@@ -101,7 +101,7 @@ class CarState(CarStateBase):
       ('SEATBELTS', 10),
       ('EPS_2', 100),
       ("ABS_6", 100),
-      ("LKA_HUD_2", 4)
+      # ("LKA_HUD_2", 4)
     ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
