@@ -14,6 +14,8 @@ def create_lkas_hud_command(packer, lat_active):
     "SOMETHING_HANDS_ON_WHEEL_2": 0,
     "SOMETHING_HANDS_ON_WHEEL": 0,
     "HANDS_ON_WHEEL_WARNING": 1,
+    "LKAS_FAULTED_3": lat_active,
+    "LKAS_FAULTED_2": not lat_active,
     "LANE_HUD_INDICATOR": 6 if lat_active else 1,
     "LKAS_STATUS": 0,
     "LKAS_FAULT_TYPE": 0,
