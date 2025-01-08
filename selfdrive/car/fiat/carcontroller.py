@@ -52,7 +52,8 @@ class CarController(CarControllerBase):
     can_sends.append(fiatcan.create_lkas_command(self.packer, self.frame, apply_steer, CC.latActive))
 
     if self.frame % 25 == 0:
-      can_sends.append(fiatcan.create_lkas_hud_command(self.packer, CC.latActive))
+      eps_faulted = CS.out.steerFaultPermanent or CS.out.steerFaultTemporary
+      can_sends.append(fiatcan.create_lkas_hud_command(self.packer, CC.latActive, eps_faulted))
 
     self.frame += 1
 

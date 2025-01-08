@@ -9,7 +9,7 @@ def create_lkas_command(packer, frame, apply_steer, enabled):
   }
   return packer.make_can_msg("LKAS_COMMAND", PT_BUS, values)
 
-def create_lkas_hud_command(packer, lat_active):
+def create_lkas_hud_command(packer, lat_active, eps_faulted):
   values = {
     "SOMETHING_HANDS_ON_WHEEL_2": 0,
     "SOMETHING_HANDS_ON_WHEEL": 0,
@@ -18,7 +18,7 @@ def create_lkas_hud_command(packer, lat_active):
     "LKAS_FAULTED_2": not lat_active,
     "LANE_HUD_INDICATOR": 6 if lat_active else 1,
     "LKAS_STATUS": 0,
-    "LKAS_FAULT_TYPE": 0,
+    "LKAS_FAULT_TYPE": 7 if eps_faulted else 0,
   }
   return packer.make_can_msg("LKA_HUD_2", PT_BUS, values)
 
