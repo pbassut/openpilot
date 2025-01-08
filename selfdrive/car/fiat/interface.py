@@ -43,7 +43,7 @@ class CarInterface(CarInterfaceBase):
     self.CS.button_event = [
       *self.CS.button_events,
       # *create_button_events(self.CS.distance_button, self.CS.prev_distance_button, {1: ButtonType.gapAdjustCruise}),
-      *create_button_events(self.CS.lkas_enabled, self.CS.prev_lkas_enabled, {1: ButtonType.altButton1}),
+      # *create_button_events(self.CS.lkas_enabled, self.CS.prev_lkas_enabled, {1: ButtonType.altButton1}),
     ]
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret)
