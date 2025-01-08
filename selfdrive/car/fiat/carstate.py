@@ -101,6 +101,7 @@ class CarState(CarStateBase):
       ('SEATBELTS', 10),
       ('EPS_2', 100),
       ("ABS_6", 100),
+      ("LKA_HUD_2", 4)
     ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
