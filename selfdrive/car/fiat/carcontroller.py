@@ -5,8 +5,6 @@ from openpilot.selfdrive.car.fiat.values import CarControllerParams
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 from openpilot.common.numpy_fast import interp
 
-DAS_BUS = 1
-
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP, VM):
     super().__init__(dbc_name, CP, VM)
@@ -28,11 +26,11 @@ class CarController(CarControllerBase):
     # cruise buttons
     # ACC cancellation
     if CC.cruiseControl.cancel:
-      can_sends.append(fiatcan.create_cruise_buttons(self.packer, CS.button_counter + 1, DAS_BUS, activate=False))
+      can_sends.append(fiatcan.create_cruise_buttons(self.packer, CS.button_counter + 1, activate=False))
 
     # ACC resume from standstill
     elif CC.cruiseControl.resume:
-      can_sends.append(fiatcan.create_cruise_buttons(self.packer, CS.button_counter + 1, DAS_BUS, activate=True))
+      can_sends.append(fiatcan.create_cruise_buttons(self.packer, CS.button_counter + 1, activate=True))
 
     # longitudinal control
     if self.CP.openpilotLongitudinalControl and CC.longActive:
@@ -40,8 +38,8 @@ class CarController(CarControllerBase):
       self.apply_gas = int(round(interp(actuators.accel)))
       self.apply_brake = int(round(interp(actuators.accel)))
 
-      can_sends.append(fiatcan.create_gas_command(self.packer, DAS_BUS, self.apply_gas, CS.accel_counter + 1))
-      can_sends.append(fiatcan.create_friction_brake_command(self.packer, DAS_BUS, self.apply_brake, CS.accel_counter + 1))
+      can_sends.append(fiatcan.create_gas_command(self.packer, self.apply_gas, CS.accel_counter + 1))
+      can_sends.append(fiatcan.create_friction_brake_command(self.packer, self.apply_brake, CS.accel_counter + 1))
 
     # steering
     # steer torque
@@ -54,7 +52,7 @@ class CarController(CarControllerBase):
 
     can_sends.append(fiatcan.create_lkas_command(self.packer, self.frame, apply_steer, CC.latActive))
     if self.frame % 25 == 0:
-      can_sends.append(fiatcan.create_lkas_hud_command(self.packer, CC.latActive))
+      can_sends.append(fiatcan.create_lkas_hud_command(self.packer, CC.latActive, apply_steer > 0))
 
     self.frame += 1
 

@@ -1,40 +1,37 @@
+PT_BUS = 0
+DAS_BUS = 1
+
 def create_lkas_command(packer, frame, apply_steer, enabled):
   values = {
     "STEERING_TORQUE": apply_steer,
     "LKAS_WATCH_STATUS": enabled,
     "COUNTER": frame,
   }
-  return packer.make_can_msg("LKAS_COMMAND", 0, values)
+  return packer.make_can_msg("LKAS_COMMAND", PT_BUS, values)
 
-def create_lkas_hud_command(packer, lat_active):
+def create_lkas_hud_command(packer, lat_active, is_steering):
   values = {
     "SOMETHING_HANDS_ON_WHEEL_2": 0,
     "SOMETHING_HANDS_ON_WHEEL": 0,
     "HANDS_ON_WHEEL_WARNING": 1,
-    "LANE_HUD_INDICATOR": 6 if lat_active else 1,
+    "LANE_HUD_INDICATOR": 6 if is_steering else 1,
+    "LKAS_STATUS": 0 if lat_active else 1,
     "LKAS_FAULT_TYPE": 0,
   }
-  return packer.make_can_msg("LKA_HUD_2", 0, values)
+  return packer.make_can_msg("LKA_HUD_2", PT_BUS, values)
 
-def create_cruise_buttons(packer, frame, bus, activate=False):
+def create_cruise_buttons(packer, frame, activate=False):
   button = 32 if activate else 128
   values = {
     "CRUISE_BUTTON_PRESSED": button,
     "COUNTER": frame,
   }
-  return packer.make_can_msg("DAS_1", bus, values)
+  return packer.make_can_msg("DAS_1", DAS_BUS, values)
 
-def create_gas_command(packer, bus, throttle, frame):
+def create_gas_command(packer, throttle, frame):
   values = { "ACCEL_PEDAL_THRESHOLD": throttle, "COUNTER": frame }
-  return packer.make_can_msg("ENGINE_1", bus, values)
+  return packer.make_can_msg("ENGINE_1", PT_BUS, values)
 
-def create_friction_brake_command(packer, bus, apply_brake, frame):
+def create_friction_brake_command(packer, apply_brake, frame):
   values = { "BRAKE_PRESSURE": apply_brake, "COUNTER": frame }
-  return packer.make_can_msg("ABS_6", bus, values)
-
-def create_acc_dashboard_command(packer, bus, enabled, target_speed_kph, hud_control, fcw):
-  target_speed = min(target_speed_kph, 255)
-
-  values = { "ACC_SET_SPEED": target_speed }
-
-  return packer.make_can_msg("DAS_2", bus, values)
+  return packer.make_can_msg("ABS_6", PT_BUS, values)
