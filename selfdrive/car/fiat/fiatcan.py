@@ -4,7 +4,7 @@ DAS_BUS = 1
 def create_lkas_command(packer, frame, apply_steer, enabled):
   values = {
     "STEERING_TORQUE": apply_steer,
-    "LKAS_WATCH_STATUS": enabled,
+    "LKAS_REQUEST_BIT": enabled,
     "COUNTER": frame,
   }
   return packer.make_can_msg("LKAS_COMMAND", PT_BUS, values)
