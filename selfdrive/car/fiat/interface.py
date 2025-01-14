@@ -21,6 +21,7 @@ class CarInterface(CarInterfaceBase):
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.fiat)]
 
     CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+    ret.lateralTuning.pid.kp = 0.8
 
     ret.centerToFront = ret.wheelbase * 0.44
     ret.enableBsm = False
