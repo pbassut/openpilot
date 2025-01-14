@@ -41,7 +41,7 @@ class CarControllerParams:
     self.STEER_DRIVER_MULTIPLIER = 2  # weight driver torque heavily
     self.STEER_DRIVER_FACTOR = 1  # from dbc
 
-STEER_THRESHOLD = 20
+STEER_THRESHOLD = 10
 
 FW_QUERY_CONFIG = FwQueryConfig(
   requests=[
