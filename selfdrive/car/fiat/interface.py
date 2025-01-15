@@ -20,9 +20,11 @@ class CarInterface(CarInterfaceBase):
     # safety config
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.fiat)]
 
-    CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+    # CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+    ret.lateralTuning.init('pid')
     ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP  = [[9.  , 20. ], [9.   , 20.]]
     ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV    = [[0.15, 0.30], [0.03 , 0.05]]
+    # ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV    = [[0.00, 0.00], [0.00 , 0.00]]
     ret.lateralTuning.pid.kf = 0.00006
 
     ret.centerToFront = ret.wheelbase * 0.44
