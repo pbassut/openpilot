@@ -44,7 +44,7 @@ class CarSpecificEvents:
   def update(self, CS: car.CarState, CS_prev: car.CarState, CC: car.CarControl):
     if self.CP.brand in ('body', 'mock'):
       events = Events()
-    elif self.CP.carName == 'fiat':
+    elif self.CP.brand == 'fiat':
       events = self.create_common_events(CS, CS_prev)
 
     elif self.CP.brand in ('subaru', 'mazda'):
