@@ -103,7 +103,7 @@ TIMINGS = {
 
 LOGS_SIZE_RATE = {
   "qlog": 0.0083,
-  "rlog": 0.1528,
+  "rlog": 0.135,
   "qcamera.ts": 0.03828,
 }
 LOGS_SIZE_RATE.update(dict.fromkeys(['ecamera.hevc', 'fcamera.hevc'], 1.2740))
@@ -371,14 +371,13 @@ class TestOnroad:
     result += "------------------------------------------------\n"
     result += "----------------- Model Timing -----------------\n"
     result += "------------------------------------------------\n"
-    # TODO: Decrease again when tinygrad speeds ups
     cfgs = [
-      ("modelV2", 0.050, 0.040),
-      ("driverStateV2", 0.050, 0.026),
+      ("modelV2", 0.045, 0.035),
+      ("driverStateV2", 0.045, 0.035),
     ]
     for (s, instant_max, avg_max) in cfgs:
       ts = [getattr(m, s).modelExecutionTime for m in self.msgs[s]]
-      # TODO some tinygrad init happens in first iteration
+      # TODO some init can happen in first iteration
       ts = ts[1:]
       assert max(ts) < instant_max, f"high '{s}' execution time: {max(ts)}"
       assert np.mean(ts) < avg_max, f"high avg '{s}' execution time: {np.mean(ts)}"

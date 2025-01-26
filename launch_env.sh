@@ -9,7 +9,7 @@ export SKIP_FW_QUERY="True"
 export FINGERPRINT="FASTBACK_LIMITED_EDITION_2024"
 
 if [ -z "$AGNOS_VERSION" ]; then
-  export AGNOS_VERSION="11.2"
+  export AGNOS_VERSION="11.6"
 fi
 
 export STAGING_ROOT="/data/safe_staging"
