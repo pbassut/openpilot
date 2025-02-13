@@ -3,13 +3,12 @@ import datetime
 import os
 import signal
 import sys
-import time
 import traceback
 
 from cereal import log
 import cereal.messaging as messaging
 import openpilot.system.sentry as sentry
-from openpilot.common.params import Params, ParamKeyFlag
+from openpilot.common.params import Params, ParamKeyType
 from openpilot.common.text_window import TextWindow
 from openpilot.system.hardware import HARDWARE
 from openpilot.system.manager.helpers import unblock_stdout, write_onroad_params, save_bootlog
@@ -27,21 +26,33 @@ def manager_init() -> None:
   build_metadata = get_build_metadata()
 
   params = Params()
-  params.clear_all(ParamKeyFlag.CLEAR_ON_MANAGER_START)
-  params.clear_all(ParamKeyFlag.CLEAR_ON_ONROAD_TRANSITION)
-  params.clear_all(ParamKeyFlag.CLEAR_ON_OFFROAD_TRANSITION)
-  params.clear_all(ParamKeyFlag.CLEAR_ON_IGNITION_ON)
+  params.clear_all(ParamKeyType.CLEAR_ON_MANAGER_START)
+  params.clear_all(ParamKeyType.CLEAR_ON_ONROAD_TRANSITION)
+  params.clear_all(ParamKeyType.CLEAR_ON_OFFROAD_TRANSITION)
   if build_metadata.release_channel:
-    params.clear_all(ParamKeyFlag.DEVELOPMENT_ONLY)
+    params.clear_all(ParamKeyType.DEVELOPMENT_ONLY)
+
+  default_params: list[tuple[str, str | bytes]] = [
+    ("CompletedTrainingVersion", "0"),
+    ("DisengageOnAccelerator", "0"),
+    ("SshEnabled", "1"),
+    ("GithubUsername", "pbassut"),
+    ("GithubSshKeys", "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC40Z/mSmx6ZTFLYtjxujDNBc2fYcUDmnYxNmQWqZRFECd9xC6fkadfqE7hsGJvdo1CQooe0dLJ/71qp15gqyv2lbyOf6UIl0V/u97bFQAo5NL2ZoODh+gZOSU4etKay4NShxbsX93bSqtAF55pG58IggconW+klaBEMjAkEWUZRZfUi2a7ecOu5mHuxON5xZeRrSEYP5rAP71WUQ3aEF4SNWWY3k3nWZ++JT4RHrM0Yad/petJYp4/YJj5k4oRr0VTzmn1IVhuFYs77NzYLcGsjVDeSTSHt5b8n4oOFgQ2gTUi+c9b7z87Z8Wcobbvrv59sN1PK/x9q7qH5QCF6qy/ patrickbassut@MacBook-PatrickBassut.home"),
+    ("GsmMetered", "1"),
+    ("HasAcceptedTerms", "0"),
+    ("LanguageSetting", "main_en"),
+    ("IsMetric", "1"),
+    ("OpenpilotEnabledToggle", "1"),
+    ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
+  ]
 
   if params.get_bool("RecordFrontLock"):
     params.put_bool("RecordFront", True)
 
-  # set unset params to their default value
-  for k in params.all_keys():
-    default_value = params.get_default_value(k)
-    if default_value and params.get(k) is None:
-      params.put(k, default_value)
+  # set unset params
+  for k, v in default_params:
+    if params.get(k) is None:
+      params.put(k, v)
 
   # Create folders needed for msgq
   try:
@@ -113,20 +124,19 @@ def manager_thread() -> None:
   params = Params()
 
   ignore: list[str] = []
-  if params.get("DongleId") in (None, UNREGISTERED_DONGLE_ID):
+  if params.get("DongleId", encoding='utf8') in (None, UNREGISTERED_DONGLE_ID):
     ignore += ["manage_athenad", "uploader"]
   if os.getenv("NOBOARD") is not None:
     ignore.append("pandad")
   ignore += [x for x in os.getenv("BLOCK", "").split(",") if len(x) > 0]
 
-  sm = messaging.SubMaster(['deviceState', 'carParams', 'pandaStates'], poll='deviceState')
+  sm = messaging.SubMaster(['deviceState', 'carParams'], poll='deviceState')
   pm = messaging.PubMaster(['managerState'])
 
   write_onroad_params(False, params)
   ensure_running(managed_processes.values(), False, params=params, CP=sm['carParams'], not_run=ignore)
 
   started_prev = False
-  ignition_prev = False
 
   while True:
     sm.update(1000)
@@ -134,20 +144,15 @@ def manager_thread() -> None:
     started = sm['deviceState'].started
 
     if started and not started_prev:
-      params.clear_all(ParamKeyFlag.CLEAR_ON_ONROAD_TRANSITION)
+      params.clear_all(ParamKeyType.CLEAR_ON_ONROAD_TRANSITION)
     elif not started and started_prev:
-      params.clear_all(ParamKeyFlag.CLEAR_ON_OFFROAD_TRANSITION)
-
-    ignition = any(ps.ignitionLine or ps.ignitionCan for ps in sm['pandaStates'] if ps.pandaType != log.PandaState.PandaType.unknown)
-    if ignition and not ignition_prev:
-      params.clear_all(ParamKeyFlag.CLEAR_ON_IGNITION_ON)
+      params.clear_all(ParamKeyType.CLEAR_ON_OFFROAD_TRANSITION)
 
     # update onroad params, which drives pandad's safety setter thread
     if started != started_prev:
       write_onroad_params(started, params)
 
     started_prev = started
-    ignition_prev = ignition
 
     ensure_running(managed_processes.values(), started, params=params, CP=sm['carParams'], not_run=ignore)
 
@@ -160,14 +165,6 @@ def manager_thread() -> None:
     msg = messaging.new_message('managerState', valid=True)
     msg.managerState.processes = [p.get_process_state_msg() for p in managed_processes.values()]
     pm.send('managerState', msg)
-
-    # kick AGNOS power monitoring watchdog
-    try:
-      if sm.all_checks(['deviceState']):
-        with open("/var/tmp/power_watchdog", "w") as f:
-          f.write(str(time.monotonic()))
-    except Exception:
-      pass
 
     # Exit main loop when uninstall/shutdown/reboot is needed
     shutdown = False
