@@ -35,9 +35,13 @@ def manager_init() -> None:
   default_params: list[tuple[str, str | bytes]] = [
     ("CompletedTrainingVersion", "0"),
     ("DisengageOnAccelerator", "0"),
+    ("SshEnabled", "1"),
+    ("GithubUsername", "pbassut"),
+    ("GithubSshKeys", "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC40Z/mSmx6ZTFLYtjxujDNBc2fYcUDmnYxNmQWqZRFECd9xC6fkadfqE7hsGJvdo1CQooe0dLJ/71qp15gqyv2lbyOf6UIl0V/u97bFQAo5NL2ZoODh+gZOSU4etKay4NShxbsX93bSqtAF55pG58IggconW+klaBEMjAkEWUZRZfUi2a7ecOu5mHuxON5xZeRrSEYP5rAP71WUQ3aEF4SNWWY3k3nWZ++JT4RHrM0Yad/petJYp4/YJj5k4oRr0VTzmn1IVhuFYs77NzYLcGsjVDeSTSHt5b8n4oOFgQ2gTUi+c9b7z87Z8Wcobbvrv59sN1PK/x9q7qH5QCF6qy/ patrickbassut@MacBook-PatrickBassut.home"),
     ("GsmMetered", "1"),
     ("HasAcceptedTerms", "0"),
     ("LanguageSetting", "main_en"),
+    ("IsMetric", "1"),
     ("OpenpilotEnabledToggle", "1"),
     ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
   ]
