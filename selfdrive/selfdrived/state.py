@@ -13,6 +13,7 @@ class StateMachine:
     self.current_alert_types = [ET.PERMANENT]
     self.state = State.disabled
     self.soft_disable_timer = 0
+    self.mem_params = Params("/dev/shm/params")
 
   def update(self, events: Events):
     # decrement the soft disable timer at every step, as it's reset on
