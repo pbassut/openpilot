@@ -47,7 +47,8 @@ void OnroadWindow::updateState(const UIState &s) {
   alerts->updateState(s);
   nvg->updateState(s);
 
-  QColor bgColor = bg_colors[s.status];
+  // QColor bgColor = bg_colors[s.status];
+  QColor bgColor = (Params("/dev/shm/params").getBool("SteerAlwaysOn") && s.status != STATUS_ENGAGED)? bg_colors[STATUS_OVERRIDE] : bg_colors[s.status];
   if (bg != bgColor) {
     // repaint border
     bg = bgColor;

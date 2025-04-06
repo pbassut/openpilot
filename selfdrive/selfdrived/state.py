@@ -1,6 +1,7 @@
 from cereal import log
 from openpilot.selfdrive.selfdrived.events import Events, ET
 from openpilot.common.realtime import DT_CTRL
+from openpilot.common.params import Params
 
 State = log.SelfdriveState.OpenpilotState
 
@@ -92,7 +93,7 @@ class StateMachine:
     # Check if openpilot is engaged and actuators are enabled
     enabled = self.state in ENABLED_STATES
     active = self.state in ACTIVE_STATES
-    if active:
+    if active or self.mem_params.get_bool("SteerAlwaysOn"):
       self.current_alert_types.append(ET.WARNING)
     return enabled, active
 

@@ -944,6 +944,14 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.NO_ENTRY: NoEntryAlert("Slow down to engage"),
   },
 
+  EventName.steerAlwaysEngageSound: {
+    ET.PERMANENT: EngagementAlert(AudibleAlert.engageMads),
+  },
+
+  EventName.steerAlwaysDisengageSound: {
+    ET.PERMANENT: EngagementAlert(AudibleAlert.disengageMads),
+  },
+
   EventName.vehicleSensorsInvalid: {
     ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("Vehicle Sensors Invalid"),
     ET.PERMANENT: NormalPermanentAlert("Vehicle Sensors Calibrating", "Drive to Calibrate"),
