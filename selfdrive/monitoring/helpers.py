@@ -412,7 +412,7 @@ class DriverMonitoring:
     # Update distraction events
     self._update_events(
       driver_engaged=sm['carState'].steeringPressed or sm['carState'].gasPressed,
-      op_engaged=sm['selfdriveState'].enabled and (mem_params.get_bool("SteerAlwaysOn") and sm['carState'].vEgo > 5),
+      op_engaged=sm['selfdriveState'].enabled and (mem_params.get_bool("SteerAlwaysOn") and sm['carState'].vEgo > 10),
       standstill=sm['carState'].standstill,
       wrong_gear=sm['carState'].gearShifter in [car.CarState.GearShifter.reverse, car.CarState.GearShifter.park],
       car_speed=sm['carState'].vEgo
