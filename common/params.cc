@@ -88,6 +88,8 @@ private:
 };
 
 std::unordered_map<std::string, uint32_t> keys = {
+    {"SteerAlwaysOn", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
+
     {"AccessToken", CLEAR_ON_MANAGER_START | DONT_LOG},
     {"AdbEnabled", PERSISTENT},
     {"AlwaysOnDM", PERSISTENT},

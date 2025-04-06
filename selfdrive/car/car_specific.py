@@ -40,12 +40,19 @@ class CarSpecificEvents:
     self.silent_steer_warning = True
 
     self.cruise_buttons: deque = deque([], maxlen=HYUNDAI_PREV_BUTTON_SAMPLES)
+    self.prevMadsEnabled = False
 
   def update(self, CS: car.CarState, CS_prev: car.CarState, CC: car.CarControl):
     if self.CP.brand in ('body', 'mock'):
       events = Events()
     elif self.CP.brand == 'fiat':
       events = self.create_common_events(CS, CS_prev)
+
+      if not self.prevMadsEnabled and CS.madsEnabled:
+        events.add(EventName.steerAlwaysEngageSound)
+      elif self.prevMadsEnabled and not CS.madsEnabled:
+        events.add(EventName.steerAlwaysDisengageSound)
+      self.prevMadsEnabled = CS.madsEnabled
 
     elif self.CP.brand in ('subaru', 'mazda'):
       events = self.create_common_events(CS, CS_prev)
