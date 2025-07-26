@@ -1,131 +1,214 @@
-# CAN CLI Tool
+# OpenPilot CAN CLI Tool
 
-A comprehensive command-line interface tool for safely interacting with CAN bus networks. This tool prioritizes safety and correctness while providing powerful capabilities for CAN bus operations.
+A safe, comprehensive command-line interface for CAN bus operations in OpenPilot.
 
-## Overview
+## ⚠️ SAFETY WARNING
 
-The CAN CLI tool is designed with safety as the primary concern. It implements multiple layers of protection to prevent accidental damage to vehicle systems while enabling legitimate development and testing use cases.
+This tool can send messages directly to your vehicle's CAN bus. Improper use can cause:
+- Loss of vehicle control
+- Damage to vehicle systems
+- Personal injury or death
 
-## Key Features
+**NEVER** use this tool on a vehicle in motion. Always test in a safe, controlled environment.
 
-### 🛡️ Safety Framework
-- **Multiple Safety Modes**: LOCKED, PRODUCTION, TESTING, and DEVELOPMENT modes with different restriction levels
-- **Critical Address Protection**: Prevents sending to addresses that control steering, braking, throttle, etc.
-- **Rate Limiting**: Prevents CAN bus flooding with configurable limits
-- **Confirmation Prompts**: Requires explicit confirmation for dangerous operations
-- **Audit Trail**: Complete logging of all operations for compliance and debugging
+## Features
 
-### 📡 Core Capabilities
-- Send single or batch CAN messages
-- Monitor live CAN traffic with filtering
-- Record and replay CAN sessions
-- DBC file support for message decoding
-- Message templates for common operations
-- Multiple interface support (Panda, SocketCAN, Virtual)
+- **Multi-level Safety Modes**: Four operation modes with increasing levels of access
+- **Rate Limiting**: Prevents CAN bus flooding
+- **Critical Address Protection**: Special handling for safety-critical messages
+- **Message Validation**: Ensures proper message format and structure
+- **Audit Logging**: Complete operation history for debugging
+- **DBC Support**: Send messages using signal names from DBC files
+- **Bus Monitoring**: Watch CAN traffic in real-time
 
-### 🔧 Advanced Features
-- Message validation with checksums and counters
-- Watchdog monitoring for long operations
-- Burst mode for controlled rapid sending
-- CSV import/export for batch operations
-- Real-time statistics and performance monitoring
+## Installation
+
+```bash
+cd /path/to/openpilot
+pip install -e .  # Installs openpilot dependencies
+
+# The tool is now available at:
+./tools/can_cli/can_cli.py
+```
 
 ## Safety Modes
 
-1. **LOCKED Mode**: No write operations allowed (read-only)
-2. **PRODUCTION Mode**: Critical messages require confirmation, strict safety rules
-3. **TESTING Mode**: Some critical messages blocked, relaxed rules for testing
-4. **DEVELOPMENT Mode**: Full access with warnings, intended for development only
+### 1. LOCKED (Default for new users)
+- Read-only access
+- Cannot send any messages
+- Safe for learning and monitoring
 
-## Quick Start
+### 2. PRODUCTION (Default)
+- High safety checks
+- Blocks critical addresses
+- Requires confirmations
+- Recommended for normal use
+
+### 3. TESTING
+- Moderate safety for development
+- Allows some critical addresses with confirmation
+- Rate limiting still active
+
+### 4. DEVELOPMENT
+- Low safety restrictions
+- Full access with warnings
+- Use only in controlled environments
+
+## Usage Examples
+
+### Basic Message Sending
 
 ```bash
-# Monitor CAN bus (safe in any mode)
-can-cli monitor live --bus 0
+# Send a simple message (production mode)
+./can_cli.py send 0x123 "01 02 03 04" --bus 0
 
-# Send a message in production mode (will prompt for confirmation if critical)
-can-cli send single --address 0x100 --data "01 02 03 04" --bus 0
+# Send in testing mode
+./can_cli.py --mode testing send 0x200 "FF 00" --bus 1
 
-# Use development mode for testing (be careful!)
-can-cli --safety-mode development send single -a 0x180 -d "00 00 00 00"
-
-# Record CAN traffic
-can-cli record start --output session.json --duration 60
-
-# Monitor with DBC decoding
-can-cli monitor live --dbc honda_civic_2016.dbc --filter 0x326
+# Send CAN-FD message
+./can_cli.py --mode development send 0x400 "01 02 03 04 05 06 07 08 09 0A" --fd
 ```
 
-## Architecture
+### Using DBC Files
 
-The tool is built with a modular architecture:
+```bash
+# Send steering command using Toyota DBC
+./can_cli.py --mode testing send-dbc toyota "STEERING_LKA" "STEER_REQUEST=1,STEER_TORQUE_CMD=50"
 
-```
-can_cli/
-├── cli.py              # Main CLI entry point
-├── safety/            # Safety validation and rules
-├── core/             # CAN interface abstraction
-├── commands/         # CLI command implementations
-├── utils/           # Utilities and helpers
-└── config/          # Configuration management
+# Send cruise control command
+./can_cli.py send-dbc honda "ACC_HUD" "CRUISE_SPEED=65,ENABLE=1"
 ```
 
-## Example Usage
+### Monitoring CAN Bus
 
-See `example_usage.py` for demonstrations of:
-- Safety mode behavior
-- Rate limiting in action
-- Message validation
-- Safe sending patterns
+```bash
+# Monitor all buses for 30 seconds
+./can_cli.py monitor --timeout 30
+
+# Monitor only bus 0
+./can_cli.py monitor --bus 0 --timeout 60
+
+# Monitor indefinitely (Ctrl+C to stop)
+./can_cli.py monitor --timeout 999999
+```
+
+### Batch Operations
+
+Create a file `messages.txt`:
+```
+# Format: address data bus
+0x123 "01 02 03" 0
+0x456 "AA BB CC DD" 1
+0x789 "11 22" 0
+```
+
+Then use with shell:
+```bash
+while IFS= read -r line; do
+    [[ $line =~ ^#.*$ ]] && continue  # Skip comments
+    ./can_cli.py send $line
+done < messages.txt
+```
+
+## Configuration
+
+The tool stores configuration and logs in `~/.openpilot/can_cli/`:
+
+```
+~/.openpilot/can_cli/
+├── config.json          # User configuration
+├── logs/                # Audit logs
+│   └── can_cli_*.log    # Timestamped log files
+└── templates/           # Message templates
+```
+
+### Custom Configuration
+
+Create `~/.openpilot/can_cli/config.json`:
+
+```json
+{
+  "default_mode": "production",
+  "rate_limits": {
+    "global": 100,
+    "per_address": 20
+  },
+  "critical_addresses": {
+    "0x180": "CUSTOM_STEERING",
+    "0x300": "CUSTOM_CRITICAL"
+  },
+  "templates": {
+    "wake_up": {
+      "address": "0x700",
+      "data": "00 00 00 00 00 00 00 00",
+      "bus": 0
+    }
+  }
+}
+```
 
 ## Safety Best Practices
 
-1. **Always start in PRODUCTION mode** - This is the safest default
-2. **Use DBC files when available** - They provide message validation
-3. **Test in DEVELOPMENT mode first** - Before production use
-4. **Monitor before sending** - Understand bus traffic patterns
-5. **Use templates for common operations** - Reduces errors
-6. **Enable audit logging** - For compliance and debugging
-7. **Set appropriate rate limits** - Prevent bus flooding
+1. **Start with LOCKED mode**: Monitor bus traffic before sending
+2. **Use DBC files**: They provide correct message formats
+3. **Test incrementally**: Start with non-critical messages
+4. **Monitor responses**: Watch for error messages or unusual behavior
+5. **Keep logs**: Enable logging for debugging issues
+6. **Understand the protocol**: Know what each message does
+7. **Have a kill switch**: Be ready to power off if needed
 
-## Critical Addresses
+## Troubleshooting
 
-The following addresses are considered critical and have special protections:
+### "Cannot find Panda"
+- Ensure Panda is connected via USB
+- Check permissions: `sudo chmod 666 /dev/ttyACM*`
+- Try `lsusb` to verify device is detected
 
-- `0x180`: Steering Control
-- `0x200`: Brake Command
-- `0x220`: Throttle Control
-- `0x260`: Transmission Control
-- `0x343`: AEB Control
-- `0x394`: Airbag Control
+### "Rate limit exceeded"
+- Reduce message frequency
+- Check for loops in scripts
+- Increase limits in config if needed
 
-## Implementation Status
+### "Invalid DBC"
+- Ensure opendbc submodule is updated
+- Check DBC name matches available files
+- Verify signal names are correct
 
-This is a design specification and partial implementation. The core safety framework is implemented, including:
+## Architecture
 
-- ✅ Safety rules engine
-- ✅ Rate limiting
-- ✅ Message validation
-- ✅ CAN interface abstraction
-- ✅ Example usage demonstrations
-
-Still to be implemented:
-- CLI command structure
-- DBC file integration
-- Record/replay functionality
-- Configuration management
-- Full test suite
+```
+can_cli.py
+├── SafetyMode          # Operation mode enum
+├── CANMessage          # Message representation
+├── SafetyRules         # Validation logic
+├── RateLimiter         # Rate control
+├── CANInterface        # Core CAN operations
+│   ├── connect()       # Panda connection
+│   ├── send_message()  # Send with safety
+│   └── monitor_bus()   # Bus monitoring
+└── CANCLIApp           # CLI interface
+    ├── Parser          # Argument parsing
+    └── Commands        # Command handlers
+```
 
 ## Contributing
 
-When contributing to this tool:
-
-1. Safety is the top priority - don't compromise on safety features
-2. All changes must maintain backward compatibility with safety rules
-3. New features should default to the safest option
-4. Add tests for any new functionality
-5. Update documentation for user-facing changes
+When adding features, ensure:
+1. Safety checks are maintained
+2. New critical addresses are added to `CRITICAL_ADDRESSES`
+3. Rate limiting is respected
+4. Operations are logged
+5. Tests are added for new functionality
 
 ## License
 
-This tool is part of openpilot and follows the same licensing.
+This tool is part of OpenPilot and follows the same MIT license.
+
+## Support
+
+For issues or questions:
+1. Check existing issues in openpilot repository
+2. Review safety documentation
+3. Ask in comma.ai Discord #dev channel
+
+Remember: **Safety is not optional**. When in doubt, don't send the message.
