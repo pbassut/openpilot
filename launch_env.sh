@@ -5,6 +5,8 @@ export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
+export SKIP_FW_QUERY="True"
+export FINGERPRINT="FASTBACK_LIMITED_EDITION_2024"
 
 # models get lower priority than ui
 # - ui is ~5ms

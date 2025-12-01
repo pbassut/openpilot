@@ -1,31 +1,37 @@
-import time
+import capnp
 import os
 import pytest
 import random
 import unittest # noqa: TID251
 from collections import defaultdict, Counter
+from functools import partial
 import hypothesis.strategies as st
 from hypothesis import Phase, given, settings
 from parameterized import parameterized_class
 
-from opendbc.car import DT_CTRL, gen_empty_fingerprint, structs
-from opendbc.car.can_definitions import CanData
-from opendbc.car.car_helpers import FRAME_FINGERPRINT, interfaces
-from opendbc.car.fingerprints import MIGRATION
-from opendbc.car.honda.values import CAR as HONDA, HondaFlags
-from opendbc.car.structs import car
-from opendbc.car.tests.routes import non_tested_cars, routes, CarTestRoute
-from opendbc.car.values import Platform, PLATFORMS
-from opendbc.safety.tests.libsafety import libsafety_py
+from cereal import messaging, log, car
 from openpilot.common.basedir import BASEDIR
+from openpilot.common.params import Params
+from opendbc.car import DT_CTRL, gen_empty_fingerprint, structs
+from opendbc.car.fingerprints import all_known_cars, MIGRATION
+from opendbc.car.car_helpers import FRAME_FINGERPRINT, interfaces
+from opendbc.car.honda.values import CAR as HONDA, HondaFlags
+from opendbc.car.values import Platform
+from opendbc.car.tests.routes import non_tested_cars, routes, CarTestRoute
+from openpilot.selfdrive.selfdrived.events import ET
+from openpilot.selfdrive.selfdrived.selfdrived import SelfdriveD
 from openpilot.selfdrive.pandad import can_capnp_to_list
 from openpilot.selfdrive.test.helpers import read_segment_list
 from openpilot.system.hardware.hw import DEFAULT_DOWNLOAD_CACHE_ROOT
-from openpilot.tools.lib.logreader import LogReader, LogsUnavailable, openpilotci_source, internal_source, comma_api_source
+from openpilot.tools.lib.logreader import LogReader, LogsUnavailable, openpilotci_source_zst, openpilotci_source, internal_source, \
+                                          internal_source_zst, comma_api_source, auto_source
 from openpilot.tools.lib.route import SegmentName
 
+from panda.tests.libpanda import libpanda_py
+
+EventName = log.OnroadEvent.EventName
+PandaType = log.PandaState.PandaType
 SafetyModel = car.CarParams.SafetyModel
-SteerControlType = structs.CarParams.SteerControlType
 
 NUM_JOBS = int(os.environ.get("NUM_JOBS", "1"))
 JOB_ID = int(os.environ.get("JOB_ID", "0"))
@@ -41,9 +47,9 @@ def get_test_cases() -> list[tuple[str, CarTestRoute | None]]:
   if not len(INTERNAL_SEG_LIST):
     routes_by_car = defaultdict(set)
     for r in routes:
-      routes_by_car[str(r.car_model)].add(r)
+      routes_by_car[r.car_model].add(r)
 
-    for i, c in enumerate(sorted(PLATFORMS)):
+    for i, c in enumerate(sorted(all_known_cars())):
       if i % NUM_JOBS == JOB_ID:
         test_cases.extend(sorted((c, r) for r in routes_by_car.get(c, (None,))))
 
@@ -64,7 +70,7 @@ class TestCarModelBase(unittest.TestCase):
   platform: Platform | None = None
   test_route: CarTestRoute | None = None
 
-  can_msgs: list[tuple[int, list[CanData]]]
+  can_msgs: list[capnp.lib.capnp._DynamicStructReader]
   fingerprint: dict[int, dict[int, int]]
   elm_frame: int | None
   car_safety_mode_frame: int | None
@@ -76,11 +82,10 @@ class TestCarModelBase(unittest.TestCase):
     cls.elm_frame = None
     cls.car_safety_mode_frame = None
     cls.fingerprint = gen_empty_fingerprint()
-    alpha_long = False
+    experimental_long = False
     for msg in lr:
       if msg.which() == "can":
-        can = can_capnp_to_list((msg.as_builder().to_bytes(),))[0]
-        can_msgs.append((can[0], [CanData(*can) for can in can[1]]))
+        can_msgs.append(msg)
         if len(can_msgs) <= FRAME_FINGERPRINT:
           for m in msg.can:
             if m.src < 64:
@@ -89,7 +94,7 @@ class TestCarModelBase(unittest.TestCase):
       elif msg.which() == "carParams":
         car_fw = msg.carParams.carFw
         if msg.carParams.openpilotLongitudinalControl:
-          alpha_long = True
+          experimental_long = True
         if cls.platform is None:
           live_fingerprint = msg.carParams.carFingerprint
           cls.platform = MIGRATION.get(live_fingerprint, live_fingerprint)
@@ -111,7 +116,7 @@ class TestCarModelBase(unittest.TestCase):
           cls.car_safety_mode_frame = len(can_msgs)
 
     assert len(can_msgs) > int(50 / DT_CTRL), "no can data found"
-    return car_fw, can_msgs, alpha_long
+    return car_fw, can_msgs, experimental_long
 
   @classmethod
   def get_testing_data(cls):
@@ -123,8 +128,9 @@ class TestCarModelBase(unittest.TestCase):
       segment_range = f"{cls.test_route.route}/{seg}"
 
       try:
-        sources = [internal_source] if len(INTERNAL_SEG_LIST) else [openpilotci_source, comma_api_source]
-        lr = LogReader(segment_range, sources=sources, sort_by_time=True)
+        source = partial(auto_source, sources=[internal_source, internal_source_zst] if len(INTERNAL_SEG_LIST) else \
+                                              [openpilotci_source_zst, openpilotci_source, comma_api_source])
+        lr = LogReader(segment_range, source=source)
         return cls.get_testing_data_from_logreader(lr)
       except (LogsUnavailable, AssertionError):
         pass
@@ -143,13 +149,15 @@ class TestCarModelBase(unittest.TestCase):
         raise unittest.SkipTest
       raise Exception(f"missing test route for {cls.platform}")
 
-    car_fw, cls.can_msgs, alpha_long = cls.get_testing_data()
+    car_fw, can_msgs, experimental_long = cls.get_testing_data()
 
     # if relay is expected to be open in the route
     cls.openpilot_enabled = cls.car_safety_mode_frame is not None
 
-    cls.CarInterface = interfaces[cls.platform]
-    cls.CP = cls.CarInterface.get_params(cls.platform, cls.fingerprint, car_fw, alpha_long, False, docs=False)
+    cls.can_msgs = sorted(can_msgs, key=lambda msg: msg.logMonoTime)
+
+    cls.CarInterface, cls.CarController, cls.CarState, cls.RadarInterface = interfaces[cls.platform]
+    cls.CP = cls.CarInterface.get_params(cls.platform,  cls.fingerprint, car_fw, experimental_long, docs=False)
     assert cls.CP
     assert cls.CP.carFingerprint == cls.platform
 
@@ -160,11 +168,13 @@ class TestCarModelBase(unittest.TestCase):
     del cls.can_msgs
 
   def setUp(self):
-    self.CI = self.CarInterface(self.CP.copy())
+    self.CI = self.CarInterface(self.CP.copy(), self.CarController, self.CarState)
     assert self.CI
 
+    Params().put_bool("OpenpilotEnabledToggle", self.openpilot_enabled)
+
     # TODO: check safetyModel is in release panda build
-    self.safety = libsafety_py.libsafety
+    self.safety = libpanda_py.libpanda
 
     cfg = self.CP.safetyConfigs[-1]
     set_status = self.safety.set_safety_hooks(cfg.safetyModel.raw, cfg.safetyParam)
@@ -178,61 +188,65 @@ class TestCarModelBase(unittest.TestCase):
     # make sure car params are within a valid range
     self.assertGreater(self.CP.mass, 1)
 
-    if self.CP.steerControlType != SteerControlType.angle:
+    if self.CP.steerControlType != structs.CarParams.SteerControlType.angle:
       tuning = self.CP.lateralTuning.which()
       if tuning == 'pid':
         self.assertTrue(len(self.CP.lateralTuning.pid.kpV))
       elif tuning == 'torque':
-        self.assertTrue(self.CP.lateralTuning.torque.latAccelFactor > 0)
+        self.assertTrue(self.CP.lateralTuning.torque.kf > 0)
       else:
         raise Exception("unknown tuning")
 
   def test_car_interface(self):
     # TODO: also check for checksum violations from can parser
     can_invalid_cnt = 0
+    can_valid = False
     CC = structs.CarControl().as_reader()
 
     for i, msg in enumerate(self.can_msgs):
-      CS = self.CI.update(msg)
-      self.CI.apply(CC, msg[0])
+      CS = self.CI.update(can_capnp_to_list((msg.as_builder().to_bytes(),)))
+      self.CI.apply(CC, msg.logMonoTime)
+
+      if CS.canValid:
+        can_valid = True
 
       # wait max of 2s for low frequency msgs to be seen
-      if i > 250:
+      if i > 200 or can_valid:
         can_invalid_cnt += not CS.canValid
 
     self.assertEqual(can_invalid_cnt, 0)
 
   def test_radar_interface(self):
-    RI = self.CarInterface.RadarInterface(self.CP)
+    RI = self.RadarInterface(self.CP)
     assert RI
 
     # Since OBD port is multiplexed to bus 1 (commonly radar bus) while fingerprinting,
     # start parsing CAN messages after we've left ELM mode and can expect CAN traffic
     error_cnt = 0
     for i, msg in enumerate(self.can_msgs[self.elm_frame:]):
-      rr: structs.RadarData | None = RI.update(msg)
+      rr: structs.RadarData | None = RI.update(can_capnp_to_list((msg.as_builder().to_bytes(),)))
       if rr is not None and i > 50:
-        error_cnt += rr.errors.canError
+        error_cnt += structs.RadarData.Error.canError in rr.errors
     self.assertEqual(error_cnt, 0)
 
   def test_panda_safety_rx_checks(self):
     if self.CP.dashcamOnly:
       self.skipTest("no need to check panda safety for dashcamOnly")
 
-    start_ts = self.can_msgs[0][0]
+    start_ts = self.can_msgs[0].logMonoTime
 
     failed_addrs = Counter()
     for can in self.can_msgs:
       # update panda timer
-      t = (can[0] - start_ts) / 1e3
+      t = (can.logMonoTime - start_ts) / 1e3
       self.safety.set_timer(int(t))
 
       # run all msgs through the safety RX hook
-      for msg in can[1]:
+      for msg in can.can:
         if msg.src >= 64:
           continue
 
-        to_send = libsafety_py.make_CANPacket(msg.address, msg.src % 4, msg.dat)
+        to_send = libpanda_py.make_CANPacket(msg.address, msg.src % 4, msg.dat)
         if self.safety.safety_rx_hook(to_send) != 1:
           failed_addrs[hex(msg.address)] += 1
 
@@ -257,16 +271,13 @@ class TestCarModelBase(unittest.TestCase):
 
   def test_panda_safety_tx_cases(self, data=None):
     """Asserts we can tx common messages"""
-    if self.CP.dashcamOnly:
-      self.skipTest("no need to check panda safety for dashcamOnly")
-
     if self.CP.notCar:
       self.skipTest("Skipping test for notCar")
 
     def test_car_controller(car_control):
       now_nanos = 0
       msgs_sent = 0
-      CI = self.CarInterface(self.CP)
+      CI = self.CarInterface(self.CP, self.CarController, self.CarState)
       for _ in range(round(10.0 / DT_CTRL)):  # make sure we hit the slowest messages
         CI.update([])
         _, sendcan = CI.apply(car_control, now_nanos)
@@ -274,7 +285,7 @@ class TestCarModelBase(unittest.TestCase):
         now_nanos += DT_CTRL * 1e9
         msgs_sent += len(sendcan)
         for addr, dat, bus in sendcan:
-          to_send = libsafety_py.make_CANPacket(addr, bus % 4, dat)
+          to_send = libpanda_py.make_CANPacket(addr, bus % 4, dat)
           self.assertTrue(self.safety.safety_tx_hook(to_send), (addr, dat, bus))
 
       # Make sure we attempted to send messages
@@ -314,29 +325,24 @@ class TestCarModelBase(unittest.TestCase):
     msg_strategy = st.binary(min_size=size, max_size=size)
     msgs = data.draw(st.lists(msg_strategy, min_size=20))
 
-    vehicle_speed_seen = self.CP.steerControlType == SteerControlType.angle and not self.CP.notCar
-
-    for n, dat in enumerate(msgs):
+    for dat in msgs:
       # due to panda updating state selectively, only edges are expected to match
       # TODO: warm up CarState with real CAN messages to check edge of both sources
       #  (eg. toyota's gasPressed is the inverse of a signal being set)
       prev_panda_gas = self.safety.get_gas_pressed_prev()
       prev_panda_brake = self.safety.get_brake_pressed_prev()
       prev_panda_regen_braking = self.safety.get_regen_braking_prev()
-      prev_panda_steering_disengage = self.safety.get_steering_disengage_prev()
       prev_panda_vehicle_moving = self.safety.get_vehicle_moving()
-      prev_panda_vehicle_speed_min = self.safety.get_vehicle_speed_min()
-      prev_panda_vehicle_speed_max = self.safety.get_vehicle_speed_max()
       prev_panda_cruise_engaged = self.safety.get_cruise_engaged_prev()
       prev_panda_acc_main_on = self.safety.get_acc_main_on()
 
-      to_send = libsafety_py.make_CANPacket(address, bus, dat)
+      to_send = libpanda_py.make_CANPacket(address, bus, dat)
       self.safety.safety_rx_hook(to_send)
 
-      can = [(int(time.monotonic() * 1e9), [CanData(address=address, dat=dat, src=bus)])]
-      CS = self.CI.update(can)
-      if n < 5:  # CANParser warmup time
-        continue
+      can = messaging.new_message('can', 1)
+      can.can = [log.CanData(address=address, dat=dat, src=bus)]
+
+      CS = self.CI.update(can_capnp_to_list((can.to_bytes(),)))
 
       if self.safety.get_gas_pressed_prev() != prev_panda_gas:
         self.assertEqual(CS.gasPressed, self.safety.get_gas_pressed_prev())
@@ -353,21 +359,8 @@ class TestCarModelBase(unittest.TestCase):
       if self.safety.get_regen_braking_prev() != prev_panda_regen_braking:
         self.assertEqual(CS.regenBraking, self.safety.get_regen_braking_prev())
 
-      if self.safety.get_steering_disengage_prev() != prev_panda_steering_disengage:
-        self.assertEqual(CS.steeringDisengage, self.safety.get_steering_disengage_prev())
-
-      if self.safety.get_vehicle_moving() != prev_panda_vehicle_moving and not self.CP.notCar:
+      if self.safety.get_vehicle_moving() != prev_panda_vehicle_moving:
         self.assertEqual(not CS.standstill, self.safety.get_vehicle_moving())
-
-      # check vehicle speed if angle control car or available
-      if self.safety.get_vehicle_speed_min() > 0 or self.safety.get_vehicle_speed_max() > 0:
-        vehicle_speed_seen = True
-
-      if vehicle_speed_seen and (self.safety.get_vehicle_speed_min() != prev_panda_vehicle_speed_min or
-                                 self.safety.get_vehicle_speed_max() != prev_panda_vehicle_speed_max):
-        v_ego_raw = CS.vEgoRaw / self.CP.wheelSpeedFactor
-        self.assertFalse(v_ego_raw > (self.safety.get_vehicle_speed_max() + 1e-3) or
-                         v_ego_raw < (self.safety.get_vehicle_speed_min() - 1e-3))
 
       if not (self.CP.brand == "honda" and not (self.CP.flags & HondaFlags.BOSCH)):
         if self.safety.get_cruise_engaged_prev() != prev_panda_cruise_engaged:
@@ -386,21 +379,23 @@ class TestCarModelBase(unittest.TestCase):
 
     # warm up pass, as initial states may be different
     for can in self.can_msgs[:300]:
-      self.CI.update(can)
-      for msg in filter(lambda m: m.src < 64, can[1]):
-        to_send = libsafety_py.make_CANPacket(msg.address, msg.src % 4, msg.dat)
+      self.CI.update(can_capnp_to_list((can.as_builder().to_bytes(), )))
+      for msg in filter(lambda m: m.src in range(64), can.can):
+        to_send = libpanda_py.make_CANPacket(msg.address, msg.src % 4, msg.dat)
         self.safety.safety_rx_hook(to_send)
 
     controls_allowed_prev = False
     CS_prev = car.CarState.new_message()
     checks = defaultdict(int)
-    vehicle_speed_seen = self.CP.steerControlType == SteerControlType.angle and not self.CP.notCar
+    mismatches = defaultdict(list)
+    selfdrived = SelfdriveD(CP=self.CP)
+    selfdrived.initialized = True
     for idx, can in enumerate(self.can_msgs):
-      CS = self.CI.update(can).as_reader()
-      for msg in filter(lambda m: m.src < 64, can[1]):
-        to_send = libsafety_py.make_CANPacket(msg.address, msg.src % 4, msg.dat)
+      CS = self.CI.update(can_capnp_to_list((can.as_builder().to_bytes(), ))).as_reader()
+      for msg in filter(lambda m: m.src in range(64), can.can):
+        to_send = libpanda_py.make_CANPacket(msg.address, msg.src % 4, msg.dat)
         ret = self.safety.safety_rx_hook(to_send)
-        self.assertEqual(1, ret, f"safety rx failed ({ret=}): {(msg.address, msg.src % 4)}")
+        self.assertEqual(1, ret, f"safety rx failed ({ret=}): {to_send} {msg.address} {msg.src} {msg.dat}")
 
       # Skip first frame so CS_prev is properly initialized
       if idx == 0:
@@ -412,17 +407,10 @@ class TestCarModelBase(unittest.TestCase):
 
       # TODO: check rest of panda's carstate (steering, ACC main on, etc.)
 
+      if CS.gasPressed != self.safety.get_gas_pressed_prev():
+        mismatches['gasPressed'].append({ 'CS': CS.gasPressed, 'Panda': self.safety.get_gas_pressed_prev() })
       checks['gasPressed'] += CS.gasPressed != self.safety.get_gas_pressed_prev()
-      checks['standstill'] += (CS.standstill == self.safety.get_vehicle_moving()) and not self.CP.notCar
-
-      # check vehicle speed if angle control car or available
-      if self.safety.get_vehicle_speed_min() > 0 or self.safety.get_vehicle_speed_max() > 0:
-        vehicle_speed_seen = True
-
-      if vehicle_speed_seen:
-        v_ego_raw = CS.vEgoRaw / self.CP.wheelSpeedFactor
-        checks['vEgoRaw'] += (v_ego_raw > (self.safety.get_vehicle_speed_max() + 1e-3) or
-                              v_ego_raw < (self.safety.get_vehicle_speed_min() - 1e-3))
+      checks['standstill'] += CS.standstill == self.safety.get_vehicle_moving()
 
       # TODO: remove this exception once this mismatch is resolved
       brake_pressed = CS.brakePressed
@@ -431,7 +419,8 @@ class TestCarModelBase(unittest.TestCase):
           brake_pressed = False
       checks['brakePressed'] += brake_pressed != self.safety.get_brake_pressed_prev()
       checks['regenBraking'] += CS.regenBraking != self.safety.get_regen_braking_prev()
-      checks['steeringDisengage'] += CS.steeringDisengage != self.safety.get_steering_disengage_prev()
+      if brake_pressed != self.safety.get_brake_pressed_prev():
+        mismatches['brakePressed'].append({ 'CS': brake_pressed, 'Panda': self.safety.get_brake_pressed_prev()})
 
       if self.CP.pcmCruise:
         # On most pcmCruise cars, openpilot's state is always tied to the PCM's cruise state.
@@ -448,8 +437,11 @@ class TestCarModelBase(unittest.TestCase):
         if not self.CP.notCar:
           checks['cruiseState'] += CS.cruiseState.enabled != self.safety.get_cruise_engaged_prev()
       else:
-        # Check for user button enable on rising edge of controls allowed
-        button_enable = CS.buttonEnable and (not CS.brakePressed or CS.standstill)
+        # Check for enable events on rising edge of controls allowed
+        selfdrived.update_events(CS)
+        selfdrived.CS_prev = CS
+        button_enable = (selfdrived.events.contains(ET.ENABLE) and
+                         EventName.pedalPressed not in selfdrived.events.names)
         mismatch = button_enable != (self.safety.get_controls_allowed() and not controls_allowed_prev)
         checks['controlsAllowed'] += mismatch
         controls_allowed_prev = self.safety.get_controls_allowed()
