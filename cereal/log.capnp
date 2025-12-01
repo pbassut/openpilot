@@ -131,6 +131,8 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     userBookmark @95;
     excessiveActuation @96;
     audioFeedback @97;
+    steerAlwaysEngageSound @99;
+    steerAlwaysDisengageSound @100;
 
     soundsUnavailableDEPRECATED @47;
   }

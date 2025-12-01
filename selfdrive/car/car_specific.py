@@ -1,7 +1,11 @@
+from collections import deque
 from cereal import car, log
 from opendbc.car import DT_CTRL, structs
 from opendbc.car.car_helpers import interfaces
 from opendbc.car.interfaces import MAX_CTRL_SPEED
+from opendbc.car.volkswagen.values import CarControllerParams as VWCarControllerParams
+from opendbc.car.hyundai.interface import ENABLE_BUTTONS as HYUNDAI_ENABLE_BUTTONS
+from opendbc.car.hyundai.carstate import PREV_BUTTON_SAMPLES as HYUNDAI_PREV_BUTTON_SAMPLES
 
 from openpilot.selfdrive.selfdrived.events import Events
 
@@ -20,6 +24,9 @@ class CarSpecificEvents:
     self.no_steer_warning = False
     self.silent_steer_warning = True
 
+    self.cruise_buttons: deque = deque([], maxlen=HYUNDAI_PREV_BUTTON_SAMPLES)
+    self.prevMadsEnabled = False
+
   def update(self, CS: car.CarState, CS_prev: car.CarState, CC: car.CarControl):
     if self.CP.brand in ('body', 'mock'):
       return Events()
@@ -34,6 +41,14 @@ class CarSpecificEvents:
         self.low_speed_alert = False
       if self.low_speed_alert:
         events.add(EventName.belowSteerSpeed)
+    elif self.CP.brand == 'fiat':
+      events = self.create_common_events(CS, CS_prev)
+
+      if not self.prevMadsEnabled and CS.madsEnabled:
+        events.add(EventName.steerAlwaysEngageSound)
+      elif self.prevMadsEnabled and not CS.madsEnabled:
+        events.add(EventName.steerAlwaysDisengageSound)
+      self.prevMadsEnabled = CS.madsEnabled
 
     elif self.CP.brand == 'honda':
       if self.CP.pcmCruise and CS.vEgo < self.CP.minEnableSpeed:
@@ -77,6 +92,8 @@ class CarSpecificEvents:
         events.add(EventName.belowEngageSpeed)
       if CS.cruiseState.standstill:
         events.add(EventName.resumeRequired)
+      if CS.vEgo < self.CP.minSteerSpeed:
+        events.add(EventName.belowSteerSpeed)
 
     elif self.CP.brand == 'volkswagen':
       if self.CP.openpilotLongitudinalControl:
@@ -133,8 +150,6 @@ class CarSpecificEvents:
       events.add(EventName.accFaulted)
     if CS.steeringPressed:
       events.add(EventName.steerOverride)
-    if CS.steeringDisengage and not CS_prev.steeringDisengage:
-      events.add(EventName.steerDisengage)
     if CS.brakePressed and CS.standstill:
       events.add(EventName.preEnableStandstill)
     if CS.gasPressed:
@@ -145,11 +160,12 @@ class CarSpecificEvents:
       events.add(EventName.invalidLkasSetting)
     if CS.lowSpeedAlert:
       events.add(EventName.belowSteerSpeed)
-    if CS.buttonEnable:
-      events.add(EventName.buttonEnable)
 
-    # Handle cancel button presses
+    # Handle button presses
     for b in CS.buttonEvents:
+      # Enable OP long on falling edge of enable buttons (defaults to accelCruise and decelCruise, overridable per-port)
+      if not self.CP.pcmCruise and (b.type in enable_buttons and not b.pressed):
+        events.add(EventName.buttonEnable)
       # Disable on rising and falling edge of cancel for both stock and OP long
       # TODO: only check the cancel button with openpilot longitudinal on all brands to match panda safety
       if b.type == ButtonType.cancel and (allow_button_cancel or not self.CP.pcmCruise):
@@ -178,7 +194,7 @@ class CarSpecificEvents:
     # we engage when pcm is active (rising edge)
     # enabling can optionally be blocked by the car interface
     if pcm_enable:
-      if CS.cruiseState.enabled and not CS_prev.cruiseState.enabled and not CS.blockPcmEnable:
+      if CS.cruiseState.enabled and not CS_prev.cruiseState.enabled and allow_enable:
         events.add(EventName.pcmEnable)
       elif not CS.cruiseState.enabled:
         events.add(EventName.pcmDisable)
