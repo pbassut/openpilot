@@ -9,6 +9,7 @@ import traceback
 from cereal import log
 import cereal.messaging as messaging
 import openpilot.system.sentry as sentry
+from openpilot.common.utils import atomic_write
 from openpilot.common.params import Params, ParamKeyFlag
 from openpilot.common.text_window import TextWindow
 from openpilot.system.hardware import HARDWARE
@@ -17,7 +18,7 @@ from openpilot.system.manager.process import ensure_running
 from openpilot.system.manager.process_config import managed_processes
 from openpilot.system.athena.registration import register, UNREGISTERED_DONGLE_ID
 from openpilot.common.swaglog import cloudlog, add_file_handler
-from openpilot.system.version import get_build_metadata, terms_version, training_version
+from openpilot.system.version import get_build_metadata
 from openpilot.system.hardware.hw import Paths
 
 
@@ -34,29 +35,24 @@ def manager_init() -> None:
   if build_metadata.release_channel:
     params.clear_all(ParamKeyFlag.DEVELOPMENT_ONLY)
 
+  default_params: list[tuple[str, str | bytes]] = [
+    ("CompletedTrainingVersion", "0"),
+    ("DisengageOnAccelerator", False),
+    ("SshEnabled", True),
+    ("GithubUsername", "pbassut"),
+    ("GithubSshKeys", "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC40Z/mSmx6ZTFLYtjxujDNBc2fYcUDmnYxNmQWqZRFECd9xC6fkadfqE7hsGJvdo1CQooe0dLJ/71qp15gqyv2lbyOf6UIl0V/u97bFQAo5NL2ZoODh+gZOSU4etKay4NShxbsX93bSqtAF55pG58IggconW+klaBEMjAkEWUZRZfUi2a7ecOu5mHuxON5xZeRrSEYP5rAP71WUQ3aEF4SNWWY3k3nWZ++JT4RHrM0Yad/petJYp4/YJj5k4oRr0VTzmn1IVhuFYs77NzYLcGsjVDeSTSHt5b8n4oOFgQ2gTUi+c9b7z87Z8Wcobbvrv59sN1PK/x9q7qH5QCF6qy/ patrickbassut@MacBook-PatrickBassut.home"),
+    ("GsmMetered", True),
+    ("HasAcceptedTerms", "0"),
+    ("LanguageSetting", "main_en"),
+    ("IsMetric", True),
+    ("OpenpilotEnabledToggle", True),
+    ("LongitudinalPersonality", log.LongitudinalPersonality.standard),
+  ]
+
   if params.get_bool("RecordFrontLock"):
     params.put_bool("RecordFront", True)
 
-
-  default_params: list[tuple[str, str | bytes]] = [
-    ("CompletedTrainingVersion", "0"),
-    ("DisengageOnAccelerator", "0"),
-    ("SshEnabled", "1"),
-    ("GithubUsername", "pbassut"),
-    ("GithubSshKeys", "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC40Z/mSmx6ZTFLYtjxujDNBc2fYcUDmnYxNmQWqZRFECd9xC6fkadfqE7hsGJvdo1CQooe0dLJ/71qp15gqyv2lbyOf6UIl0V/u97bFQAo5NL2ZoODh+gZOSU4etKay4NShxbsX93bSqtAF55pG58IggconW+klaBEMjAkEWUZRZfUi2a7ecOu5mHuxON5xZeRrSEYP5rAP71WUQ3aEF4SNWWY3k3nWZ++JT4RHrM0Yad/petJYp4/YJj5k4oRr0VTzmn1IVhuFYs77NzYLcGsjVDeSTSHt5b8n4oOFgQ2gTUi+c9b7z87Z8Wcobbvrv59sN1PK/x9q7qH5QCF6qy/ patrickbassut@MacBook-PatrickBassut.home"),
-    ("GsmMetered", "1"),
-    ("HasAcceptedTerms", "0"),
-    ("LanguageSetting", "main_en"),
-    ("IsMetric", "1"),
-    ("OpenpilotEnabledToggle", "1"),
-    ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
-  ]
-
-  # set unset params to their default value
-  # for k in params.all_keys():
-  #   default_value = params.get_default_value(k)
-  #   if default_value is not None and params.get(k) is None:
-  #     params.put(k, default_value)
+  # set unset params
   for k, v in default_params:
     if params.get(k) is None:
       params.put(k, v)
@@ -72,8 +68,6 @@ def manager_init() -> None:
   # set params
   serial = HARDWARE.get_serial()
   params.put("Version", build_metadata.openpilot.version)
-  params.put("TermsVersion", terms_version)
-  params.put("TrainingVersion", training_version)
   params.put("GitCommit", build_metadata.openpilot.git_commit)
   params.put("GitCommitDate", build_metadata.openpilot.git_commit_date)
   params.put("GitBranch", build_metadata.channel)
@@ -182,7 +176,7 @@ def manager_thread() -> None:
     # kick AGNOS power monitoring watchdog
     try:
       if sm.all_checks(['deviceState']):
-        with open("/var/tmp/power_watchdog", "w") as f:
+        with atomic_write("/var/tmp/power_watchdog", "w", overwrite=True) as f:
           f.write(str(time.monotonic()))
     except Exception:
       pass
