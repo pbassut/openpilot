@@ -9,6 +9,9 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
 from openpilot.common.stat_live import RunningStatFilter
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
+from openpilot.common.params import Params
+
+mem_params = Params("/dev/shm/params")
 
 EventName = log.OnroadEvent.EventName
 
@@ -418,7 +421,8 @@ class DriverMonitoring:
     # Update distraction events
     self._update_events(
       driver_engaged=sm['carState'].steeringPressed or sm['carState'].gasPressed,
-      op_engaged=sm['selfdriveState'].enabled,
+      # op_engaged=sm['selfdriveState'].enabled,
+      op_engaged=sm['selfdriveState'].enabled and (mem_params.get_bool("SteerAlwaysOn") and sm['carState'].vEgo > 5),
       standstill=sm['carState'].standstill,
       wrong_gear=sm['carState'].gearShifter in [car.CarState.GearShifter.reverse, car.CarState.GearShifter.park],
       car_speed=sm['carState'].vEgo

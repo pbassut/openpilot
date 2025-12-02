@@ -21,7 +21,7 @@ static const QColor DMON_ENGAGED_COLOR = QColor::fromRgbF(0.1, 0.945, 0.26);
 static const QColor DMON_DISENGAGED_COLOR = QColor::fromRgbF(0.545, 0.545, 0.545);
 
 DriverMonitorRenderer::DriverMonitorRenderer() : face_kpts_draw(std::size(DEFAULT_FACE_KPTS_3D)) {
-  dm_img = loadPixmap("../assets/icons/driver_face.png", {img_size + 5, img_size + 5});
+  dm_img = loadPixmap("../assets/img_driver_face.png", {img_size + 5, img_size + 5});
 }
 
 void DriverMonitorRenderer::updateState(const UIState &s) {
@@ -31,7 +31,7 @@ void DriverMonitorRenderer::updateState(const UIState &s) {
   if (!is_visible) return;
 
   auto dm_state = sm["driverMonitoringState"].getDriverMonitoringState();
-  is_active = dm_state.getIsActiveMode();
+  is_active = dm_state.getIsActiveMode() || Params("/dev/shm/params").getBool("SteerAlwaysOn");
   is_rhd = dm_state.getIsRHD();
   dm_fade_state = std::clamp(dm_fade_state + 0.2f * (0.5f - is_active), 0.0f, 1.0f);
 
@@ -89,7 +89,7 @@ void DriverMonitorRenderer::draw(QPainter &painter, const QRect &surface_rect) {
   const int arc_l = 133;
   const float arc_t_default = 6.7f;
   const float arc_t_extend = 12.0f;
-  QColor arc_color = uiState()->engaged() ? DMON_ENGAGED_COLOR : DMON_DISENGAGED_COLOR;
+  QColor arc_color = (uiState()->engaged() || Params("/dev/shm/params").getBool("SteerAlwaysOn")) ? DMON_ENGAGED_COLOR : DMON_DISENGAGED_COLOR;
   arc_color.setAlphaF(0.4 * (1.0f - dm_fade_state));
 
   float delta_x = -driver_pose_sins[1] * arc_l / 2.0f;

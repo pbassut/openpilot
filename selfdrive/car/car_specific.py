@@ -34,10 +34,20 @@ class CarSpecificEvents:
     self.low_speed_alert = False
     self.no_steer_warning = False
     self.silent_steer_warning = True
+    self.prevMadsEnabled = False
 
   def update(self, CS: car.CarState, CS_prev: car.CarState, CC: car.CarControl):
     if self.CP.brand in ('body', 'mock'):
       events = Events()
+
+    elif self.CP.brand == 'fiat':
+      events = self.create_common_events(CS, CS_prev)
+
+      if not self.prevMadsEnabled and CS.madsEnabled:
+        events.add(EventName.steerAlwaysEngageSound)
+      elif self.prevMadsEnabled and not CS.madsEnabled:
+        events.add(EventName.steerAlwaysDisengageSound)
+      self.prevMadsEnabled = CS.madsEnabled
 
     elif self.CP.brand == 'ford':
       events = self.create_common_events(CS, CS_prev, extra_gears=[GearShifter.low, GearShifter.manumatic])
