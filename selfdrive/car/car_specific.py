@@ -44,11 +44,11 @@ class CarSpecificEvents:
     elif self.CP.brand == 'fiat':
       events = self.create_common_events(CS, CS_prev)
 
-      if not self.prevMadsEnabled and CS.madsEnabled:
-        events.add(EventName.steerAlwaysEngageSound)
-      elif self.prevMadsEnabled and not CS.madsEnabled:
-        events.add(EventName.steerAlwaysDisengageSound)
-      self.prevMadsEnabled = CS.madsEnabled
+      # if not self.prevMadsEnabled and CS.madsEnabled:
+      #   events.add(EventName.steerAlwaysEngageSound)
+      # elif self.prevMadsEnabled and not CS.madsEnabled:
+      #   events.add(EventName.steerAlwaysDisengageSound)
+      # self.prevMadsEnabled = CS.madsEnabled
 
     elif self.CP.brand == 'honda':
       if self.CP.pcmCruise and CS.vEgo < self.CP.minEnableSpeed:
@@ -58,10 +58,10 @@ class CarSpecificEvents:
         # we engage when pcm is active (rising edge)
         if CS.cruiseState.enabled and not CS_prev.cruiseState.enabled:
           events.add(EventName.pcmEnable)
-        elif not CS.cruiseState.enabled and (CC.actuators.accel >= 0. or not self.CP.openpilotLongitudinalControl):
+        elif not CS.cruiseState.enabled and (CC.actuators.accel >= 0.0 or not self.CP.openpilotLongitudinalControl):
           # it can happen that car cruise disables while comma system is enabled: need to
           # keep braking if needed or if the speed is very low
-          if CS.vEgo < self.CP.minEnableSpeed + 2.:
+          if CS.vEgo < self.CP.minEnableSpeed + 2.0:
             # non loud alert if cruise disables below 25mph as expected (+ a little margin)
             events.add(EventName.speedTooLow)
           else:
@@ -87,8 +87,7 @@ class CarSpecificEvents:
     elif self.CP.brand == 'gm':
       # Enabling at a standstill with brake is allowed
       # TODO: verify 17 Volt can enable for the first time at a stop and allow for all GMs
-      if CS.vEgo < self.CP.minEnableSpeed and not (CS.standstill and CS.brake >= 20 and
-                                                   self.CP.networkLocation == NetworkLocation.fwdCamera):
+      if CS.vEgo < self.CP.minEnableSpeed and not (CS.standstill and CS.brake >= 20 and self.CP.networkLocation == NetworkLocation.fwdCamera):
         events.add(EventName.belowEngageSpeed)
       if CS.cruiseState.standstill:
         events.add(EventName.resumeRequired)
