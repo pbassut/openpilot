@@ -48,11 +48,11 @@ class CarSpecificEvents:
     elif self.CP.brand == 'fiat':
       events = self.create_common_events(CS, CS_prev)
 
-      if not self.prevMadsEnabled and CS.madsEnabled:
-        events.add(EventName.steerAlwaysEngageSound)
-      elif self.prevMadsEnabled and not CS.madsEnabled:
-        events.add(EventName.steerAlwaysDisengageSound)
-      self.prevMadsEnabled = CS.madsEnabled
+      # if not self.prevMadsEnabled and CS.madsEnabled:
+      #   events.add(EventName.steerAlwaysEngageSound)
+      # elif self.prevMadsEnabled and not CS.madsEnabled:
+      #   events.add(EventName.steerAlwaysDisengageSound)
+      # self.prevMadsEnabled = CS.madsEnabled
 
     elif self.CP.brand in ('subaru', 'mazda'):
       events = self.create_common_events(CS, CS_prev)
@@ -67,9 +67,9 @@ class CarSpecificEvents:
       events = self.create_common_events(CS, CS_prev, extra_gears=[GearShifter.low])
 
       # Low speed steer alert hysteresis logic
-      if self.CP.minSteerSpeed > 0. and CS.vEgo < (self.CP.minSteerSpeed + 0.5):
+      if self.CP.minSteerSpeed > 0.0 and CS.vEgo < (self.CP.minSteerSpeed + 0.5):
         self.low_speed_alert = True
-      elif CS.vEgo > (self.CP.minSteerSpeed + 1.):
+      elif CS.vEgo > (self.CP.minSteerSpeed + 1.0):
         self.low_speed_alert = False
       if self.low_speed_alert:
         events.add(EventName.belowSteerSpeed)
@@ -84,10 +84,10 @@ class CarSpecificEvents:
         # we engage when pcm is active (rising edge)
         if CS.cruiseState.enabled and not CS_prev.cruiseState.enabled:
           events.add(EventName.pcmEnable)
-        elif not CS.cruiseState.enabled and (CC.actuators.accel >= 0. or not self.CP.openpilotLongitudinalControl):
+        elif not CS.cruiseState.enabled and (CC.actuators.accel >= 0.0 or not self.CP.openpilotLongitudinalControl):
           # it can happen that car cruise disables while comma system is enabled: need to
           # keep braking if needed or if the speed is very low
-          if CS.vEgo < self.CP.minEnableSpeed + 2.:
+          if CS.vEgo < self.CP.minEnableSpeed + 2.0:
             # non loud alert if cruise disables below 25mph as expected (+ a little margin)
             events.add(EventName.speedTooLow)
           else:
@@ -112,17 +112,20 @@ class CarSpecificEvents:
 
     elif self.CP.brand == 'gm':
       # The ECM allows enabling on falling edge of set, but only rising edge of resume
-      events = self.create_common_events(CS, CS_prev, extra_gears=[GearShifter.sport, GearShifter.low,
-                                                                   GearShifter.eco, GearShifter.manumatic],
-                                         pcm_enable=self.CP.pcmCruise, enable_buttons=(ButtonType.decelCruise,))
+      events = self.create_common_events(
+        CS,
+        CS_prev,
+        extra_gears=[GearShifter.sport, GearShifter.low, GearShifter.eco, GearShifter.manumatic],
+        pcm_enable=self.CP.pcmCruise,
+        enable_buttons=(ButtonType.decelCruise,),
+      )
       if not self.CP.pcmCruise:
         if any(b.type == ButtonType.accelCruise and b.pressed for b in CS.buttonEvents):
           events.add(EventName.buttonEnable)
 
       # Enabling at a standstill with brake is allowed
       # TODO: verify 17 Volt can enable for the first time at a stop and allow for all GMs
-      if CS.vEgo < self.CP.minEnableSpeed and not (CS.standstill and CS.brake >= 20 and
-                                                   self.CP.networkLocation == NetworkLocation.fwdCamera):
+      if CS.vEgo < self.CP.minEnableSpeed and not (CS.standstill and CS.brake >= 20 and self.CP.networkLocation == NetworkLocation.fwdCamera):
         events.add(EventName.belowEngageSpeed)
       if CS.cruiseState.standstill:
         events.add(EventName.resumeRequired)
@@ -130,14 +133,18 @@ class CarSpecificEvents:
         events.add(EventName.belowSteerSpeed)
 
     elif self.CP.brand == 'volkswagen':
-      events = self.create_common_events(CS, CS_prev, extra_gears=[GearShifter.eco, GearShifter.sport, GearShifter.manumatic],
-                                         pcm_enable=self.CP.pcmCruise,
-                                         enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
+      events = self.create_common_events(
+        CS,
+        CS_prev,
+        extra_gears=[GearShifter.eco, GearShifter.sport, GearShifter.manumatic],
+        pcm_enable=self.CP.pcmCruise,
+        enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise),
+      )
 
       # Low speed steer alert hysteresis logic
-      if (self.CP.minSteerSpeed - 1e-3) > VWCarControllerParams.DEFAULT_MIN_STEER_SPEED and CS.vEgo < (self.CP.minSteerSpeed + 1.):
+      if (self.CP.minSteerSpeed - 1e-3) > VWCarControllerParams.DEFAULT_MIN_STEER_SPEED and CS.vEgo < (self.CP.minSteerSpeed + 1.0):
         self.low_speed_alert = True
-      elif CS.vEgo > (self.CP.minSteerSpeed + 2.):
+      elif CS.vEgo > (self.CP.minSteerSpeed + 2.0):
         self.low_speed_alert = False
       if self.low_speed_alert:
         events.add(EventName.belowSteerSpeed)
@@ -157,13 +164,19 @@ class CarSpecificEvents:
       # To avoid re-engaging when openpilot cancels, check user engagement intention via buttons
       # Main button also can trigger an engagement on these cars
       self.cruise_buttons.append(any(ev.type in HYUNDAI_ENABLE_BUTTONS for ev in CS.buttonEvents))
-      events = self.create_common_events(CS, CS_prev, extra_gears=(GearShifter.sport, GearShifter.manumatic),
-                                         pcm_enable=self.CP.pcmCruise, allow_enable=any(self.cruise_buttons), allow_button_cancel=False)
+      events = self.create_common_events(
+        CS,
+        CS_prev,
+        extra_gears=(GearShifter.sport, GearShifter.manumatic),
+        pcm_enable=self.CP.pcmCruise,
+        allow_enable=any(self.cruise_buttons),
+        allow_button_cancel=False,
+      )
 
       # low speed steer alert hysteresis logic (only for cars with steer cut off above 10 m/s)
-      if CS.vEgo < (self.CP.minSteerSpeed + 2.) and self.CP.minSteerSpeed > 10.:
+      if CS.vEgo < (self.CP.minSteerSpeed + 2.0) and self.CP.minSteerSpeed > 10.0:
         self.low_speed_alert = True
-      if CS.vEgo > (self.CP.minSteerSpeed + 4.):
+      if CS.vEgo > (self.CP.minSteerSpeed + 4.0):
         self.low_speed_alert = False
       if self.low_speed_alert:
         events.add(EventName.belowSteerSpeed)
@@ -173,16 +186,23 @@ class CarSpecificEvents:
 
     return events
 
-  def create_common_events(self, CS: structs.CarState, CS_prev: car.CarState, extra_gears=None, pcm_enable=True,
-                           allow_enable=True, allow_button_cancel=True, enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise)):
+  def create_common_events(
+    self,
+    CS: structs.CarState,
+    CS_prev: car.CarState,
+    extra_gears=None,
+    pcm_enable=True,
+    allow_enable=True,
+    allow_button_cancel=True,
+    enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise),
+  ):
     events = Events()
 
     if CS.doorOpen:
       events.add(EventName.doorOpen)
     if CS.seatbeltUnlatched:
       events.add(EventName.seatbeltNotLatched)
-    if CS.gearShifter != GearShifter.drive and (extra_gears is None or
-       CS.gearShifter not in extra_gears):
+    if CS.gearShifter != GearShifter.drive and (extra_gears is None or CS.gearShifter not in extra_gears):
       events.add(EventName.wrongGear)
     if CS.gearShifter == GearShifter.reverse:
       events.add(EventName.reverseGear)
