@@ -44,11 +44,11 @@ class CarSpecificEvents:
     elif self.CP.brand == 'fiat':
       events = self.create_common_events(CS, CS_prev)
 
-      # if not self.prevMadsEnabled and CS.madsEnabled:
-      #   events.add(EventName.steerAlwaysEngageSound)
-      # elif self.prevMadsEnabled and not CS.madsEnabled:
-      #   events.add(EventName.steerAlwaysDisengageSound)
-      # self.prevMadsEnabled = CS.madsEnabled
+      if not self.prevMadsEnabled and CS.madsEnabled:
+        events.add(EventName.steerAlwaysEngageSound)
+      elif self.prevMadsEnabled and not CS.madsEnabled:
+        events.add(EventName.steerAlwaysDisengageSound)
+      self.prevMadsEnabled = CS.madsEnabled
 
     elif self.CP.brand == 'honda':
       if self.CP.pcmCruise and CS.vEgo < self.CP.minEnableSpeed:
