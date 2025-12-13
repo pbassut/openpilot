@@ -11,8 +11,11 @@ from openpilot.common.params import Params
 from openpilot.common.stat_live import RunningStatFilter
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
 from openpilot.system.hardware import HARDWARE
+from openpilot.common.params import Params
 
 EventName = log.OnroadEvent.EventName
+
+mem_params = Params("/dev/shm/params")
 
 # ******************************************************************************************
 #  NOTE: To fork maintainers.
@@ -470,10 +473,12 @@ class DriverMonitoring:
       demo_mode=demo,
     )
 
+    steer_always_on = mem_params.get_bool("SteerAlwaysOn")
     # Update distraction events
     self._update_events(
       driver_engaged=driver_engaged,
-      op_engaged=enabled,
+      # op_engaged=enabled,
+      op_engaged=enabled and (steer_always_on and sm['carState'].vEgo > 10),
       standstill=standstill,
       wrong_gear=wrong_gear,
       car_speed=highway_speed
