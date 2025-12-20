@@ -478,7 +478,7 @@ class DriverMonitoring:
     self._update_events(
       driver_engaged=driver_engaged,
       # op_engaged=enabled,
-      op_engaged=enabled and (steer_always_on and sm['carState'].vEgo > 10),
+      op_engaged=enabled and (steer_always_on and sm['carState'].vEgo > sm['carState'].minSteerSpeed),
       standstill=standstill,
       wrong_gear=wrong_gear,
       car_speed=highway_speed
