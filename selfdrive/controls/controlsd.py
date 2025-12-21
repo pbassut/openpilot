@@ -92,10 +92,8 @@ class Controls:
     CC = car.CarControl.new_message()
     CC.enabled = self.sm['selfdriveState'].enabled
 
-    # standstill = abs(CS.vEgo) <= max(self.CP.minSteerSpeed, 0.3) or CS.standstill
-    steering_allowed = abs(CS.vEgo) <= self.CP.minSteerSpeed
-    standstill = steering_allowed or CS.standstill
-    no_faults = not (CS.steerFaultTemporary or CS.steerFaultPermanent or standstill)
+    steering_allowed = abs(CS.vEgo) > self.CP.minSteerSpeed
+    no_faults = not (CS.steerFaultTemporary or CS.steerFaultPermanent or CS.standstill)
     CC.latActive = (steering_allowed if self.mem_params.get_bool("SteerAlwaysOn") else self.sm['selfdriveState'].active) and no_faults
     # Check which actuators can be enabled
     # CC.latActive = self.sm['selfdriveState'].active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
