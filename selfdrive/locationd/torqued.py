@@ -28,8 +28,10 @@ STEER_MIN_THRESHOLD = 0.02
 MIN_FILTER_DECAY = 50
 MAX_FILTER_DECAY = 250
 LAT_ACC_THRESHOLD = 1
-STEER_BUCKET_BOUNDS = [(-0.5, -0.3), (-0.3, -0.2), (-0.2, -0.1), (-0.1, 0), (0, 0.1), (0.1, 0.2), (0.2, 0.3), (0.3, 0.5)]
-MIN_BUCKET_POINTS = np.array([100, 300, 500, 500, 500, 500, 300, 100])
+# STEER_BUCKET_BOUNDS = [(-0.5, -0.3), (-0.3, -0.2), (-0.2, -0.1), (-0.1, 0), (0, 0.1), (0.1, 0.2), (0.2, 0.3), (0.3, 0.5)]
+# MIN_BUCKET_POINTS = np.array([100, 300, 500, 500, 500, 500, 300, 100])
+STEER_BUCKET_BOUNDS = [(-0.3, -0.2), (-0.2, -0.1), (-0.1, 0), (0, 0.1), (0.1, 0.2), (0.2, 0.3)]
+MIN_BUCKET_POINTS = np.array([300, 500, 500, 500, 500, 300])
 MIN_ENGAGE_BUFFER = 2  # secs
 
 VERSION = 3  # bump this to invalidate old parameter caches
