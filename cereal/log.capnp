@@ -602,6 +602,7 @@ struct PandaState @0xa7649e2575e4591e {
 
   # safety stuff
   controlsAllowed @3 :Bool;
+  lateralControlsAllowed @7 :Bool;
   safetyRxInvalid @19 :UInt32;
   safetyTxBlocked @24 :UInt32;
   safetyModel @14 :Car.CarParams.SafetyModel;
