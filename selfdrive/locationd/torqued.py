@@ -34,7 +34,7 @@ STEER_BUCKET_BOUNDS = [(-0.3, -0.2), (-0.2, -0.1), (-0.1, 0), (0, 0.1), (0.1, 0.
 MIN_BUCKET_POINTS = np.array([300, 500, 500, 500, 500, 300])
 MIN_ENGAGE_BUFFER = 2  # secs
 
-VERSION = 3  # bump this to invalidate old parameter caches
+VERSION = 5  # bump this to invalidate old parameter caches
 ALLOWED_CARS = ['toyota', 'hyundai', 'rivian', 'honda', 'fiat']
 
 
