@@ -28,8 +28,8 @@ STEER_MIN_THRESHOLD = 0.02
 MIN_FILTER_DECAY = 50
 MAX_FILTER_DECAY = 250
 LAT_ACC_THRESHOLD = 1
-STEER_BUCKET_BOUNDS = [(-0.5, -0.3), (-0.3, -0.2), (-0.2, -0.1), (-0.1, 0), (0, 0.1), (0.1, 0.2), (0.2, 0.3), (0.3, 0.5)]
-MIN_BUCKET_POINTS = np.array([100, 300, 500, 500, 500, 500, 300, 100])
+STEER_BUCKET_BOUNDS = [(-0.3, -0.2), (-0.2, -0.1), (-0.1, 0), (0, 0.1), (0.1, 0.2), (0.2, 0.3)]
+MIN_BUCKET_POINTS = np.array([300, 500, 500, 500, 500, 300])
 MIN_ENGAGE_BUFFER = 2  # secs
 
 VERSION = 5  # bump this to invalidate old parameter caches
@@ -200,28 +200,27 @@ class TorqueEstimator(ParameterEstimator):
   def print_bucket_status(self):
     """Print the status of each bucket for debugging"""
     bucket_names = [
-      "Bucket 1 (hard left -0.5 to -0.3)",
+      # "Bucket 1 (hard left -0.5 to -0.3)",
       "Bucket 2 (left -0.3 to -0.2)",
       "Bucket 3 (soft left -0.2 to -0.1)",
       "Bucket 4 (center-left -0.1 to 0.0)",
       "Bucket 5 (center-right 0.0 to 0.1)",
       "Bucket 6 (soft right 0.1 to 0.2)",
       "Bucket 7 (right 0.2 to 0.3)",
-      "Bucket 8 (hard right 0.3 to 0.5)",
+      # "Bucket 8 (hard right 0.3 to 0.5)",
     ]
 
-    cloudlog.info("=== Torque Bucket Status ===")
+    print("=== Torque Bucket Status ===")
     for i, (bounds, min_pts) in enumerate(zip(self.filtered_points.x_bounds, self.filtered_points.buckets_min_points.values())):
       current_pts = len(self.filtered_points.buckets[bounds])
       status = "✓" if current_pts >= min_pts else "✗"
       remaining = max(0, min_pts - current_pts)
-      cloudlog.info(f"{bucket_names[i]}: {current_pts}/{int(min_pts)} {status}" +
+      print(f"{bucket_names[i]}: {current_pts}/{int(min_pts)} {status}" +
                    (f" (need {remaining} more)" if remaining > 0 else ""))
 
-    cloudlog.info(f"Total points: {len(self.filtered_points)}/{self.min_points_total}")
-    cloudlog.info(f"Calibration: {self.filtered_points.get_valid_percent()}%")
-    cloudlog.info(f"liveValid: {self.filtered_points.is_valid()}")
-    cloudlog.info("===========================")
+    print(f"Calibration: {self.filtered_points.get_valid_percent()}%")
+    print(f"liveValid: {self.filtered_points.is_valid()}")
+    print("===========================")
 
   def get_msg(self, valid=True, with_points=False):
     msg = messaging.new_message('liveTorqueParameters')

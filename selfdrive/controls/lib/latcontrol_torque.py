@@ -23,8 +23,8 @@ from openpilot.common.pid import PIDController
 KP = 0.6
 KI = 0.15
 
-INTERP_SPEEDS = [1, 1.5, 2.0, 3.0, 5, 7.5, 10, 15, 30]
-KP_INTERP = [250, 120, 65, 30, 11.5, 5.5, 3.5, 2.0, KP]
+INTERP_SPEEDS = [1,   1.5, 2.0, 3.0, 5,    7.5, 10,  15,  30]
+KP_INTERP =     [250, 120, 65,  30,  8.5, 3.5, 2.5, 2.0, KP]
 
 LP_FILTER_CUTOFF_HZ = 1.2
 JERK_LOOKAHEAD_SECONDS = 0.19
