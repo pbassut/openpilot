@@ -6,7 +6,6 @@ from typing import Literal
 
 from openpilot.system.hardware.base import LPABase, LPAError, LPAProfileNotFoundError, Profile
 
-
 class TiciLPA(LPABase):
   def __init__(self, interface: Literal['qmi', 'at'] = 'qmi'):
     self.env = os.environ.copy()
@@ -22,10 +21,12 @@ class TiciLPA(LPABase):
   def list_profiles(self) -> list[Profile]:
     msgs = self._invoke('profile', 'list')
     self._validate_successful(msgs)
-    return [
-      Profile(iccid=p['iccid'], nickname=p['profileNickname'], enabled=p['profileState'] == 'enabled', provider=p['serviceProviderName'])
-      for p in msgs[-1]['payload']['data']
-    ]
+    return [Profile(
+      iccid=p['iccid'],
+      nickname=p['profileNickname'],
+      enabled=p['profileState'] == 'enabled',
+      provider=p['serviceProviderName']
+    ) for p in msgs[-1]['payload']['data']]
 
   def get_active_profile(self) -> Profile | None:
     return next((p for p in self.list_profiles() if p.enabled), None)
@@ -39,7 +40,6 @@ class TiciLPA(LPABase):
     self._process_notifications()
 
   def download_profile(self, qr: str, nickname: str | None = None) -> None:
-    self._check_bootstrapped()
     msgs = self._invoke('profile', 'download', '-a', qr)
     self._validate_successful(msgs)
     new_profile = next((m for m in msgs if m['payload']['message'] == 'es8p_meatadata_parse'), None)
@@ -54,7 +54,6 @@ class TiciLPA(LPABase):
     self._validate_successful(self._invoke('profile', 'nickname', iccid, nickname))
 
   def switch_profile(self, iccid: str) -> None:
-    self._check_bootstrapped()
     self._validate_profile_exists(iccid)
     latest = self.get_active_profile()
     if latest and latest.iccid == iccid:
